@@ -1,9 +1,27 @@
 name = "Microelectronics"
 uuid = "7558d6fc-9aaf-4343-9ca4-2cb62773acb1"
-authors = ["Chris Winstead <chris.winstead@usu.edu> and contributors"]
 version = "1.0.0-DEV"
+authors = ["Chris Winstead <chris.winstead@usu.edu> and contributors"]
+
+[deps]
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
+Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
+NgHerb = "16d751f2-2168-46b0-9d00-9e1470832ba3"
+OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
+LaTeXStrings = "1.4.0"
+Markdown = "1.11.0"
+NgHerb = "0.2.1"
+OrderedCollections = "1.8.1"
+Plots = "1.41.6"
+Printf = "1.11.0"
+Reexport = "1.2.2"
+Unitful = "1.28.0"
 julia = "1.10.10"
 
 [extras]
