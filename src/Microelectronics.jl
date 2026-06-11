@@ -661,7 +661,7 @@ function build_netlist(s="";title="circuit",parameters="",models="",sources="",c
     end
     println(io,".end")
     netlist=String(take!(seekstart(io)))
-    load_netlist(netlist)
+    #load_netlist(netlist)
     netlist
 end
 export build_netlist
@@ -673,10 +673,10 @@ export build_netlist
 
 Calls the NgHerb `load_netlist` function.
 """
-function load_netlist(n::AbstractString)
-    NgHerb.load_netlist(n)
-end
-export load_netlist
+# function load_netlist(n::AbstractString)
+#     NgHerb.load_netlist(n)
+# end
+# export load_netlist
 
 
 
@@ -875,7 +875,7 @@ end
 """
 simulate(analysis::Symbol; args...)
 
-Request the indicated NgHerb analysis. Keyword arguments
+Request the indicated `ngspice` analysis. Keyword arguments
 must be provided, depending on the analysis type.
 
 Analysis   Keyword Argument   Description
@@ -1345,20 +1345,20 @@ end
 
 
 # pwl"" parses a list of PWL points in tabular format
-# macro pwl_str(s)
-#     points = Vector{Tuple{Number,Number}}()
-#     for line in eachsplit(s,"\n")
-#         p = split(line)
-#         if length(p) == 2
-#             push!(points,(uparse(p[1]),uparse(p[2])))
-#         end
-#     end
-#     points
-# end
+macro pwl_str(s)
+    points = Vector{Tuple{Number,Number}}()
+    for line in eachsplit(s,"\n")
+        p = split(line)
+        if length(p) == 2
+            push!(points,(uparse(p[1]),uparse(p[2])))
+        end
+    end
+    points
+end
 
 
 export @table
-#export @pwl_str
+export @pwl_str
 
 
 

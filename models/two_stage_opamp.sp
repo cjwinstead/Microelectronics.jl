@@ -1,0 +1,13 @@
+.subckt two_stage_opamp inp inn out
++ Av=6.0 Rc=1.59Meg Cc=10n Rout=1 
++ VR=10
++ Gm=10m Imax=1m
+
+  B1 0 na i={Imax*tanh(Gm*(v(inp) - v(inn))/Imax)}
+  Rc na 0 {Rc}
+  Cc na 0 {Cc}
+
+  B2 nb 0   v={vr*tanh(Av*v(na)/vr)}
+
+  Rout nb out {Rout}
+.ends

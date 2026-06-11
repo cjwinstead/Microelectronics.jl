@@ -1,0 +1,38 @@
+using Microelectronics
+
+RI = 500u"Ω"
+D  = "D1N4004"
+
+report(@table RI D)
+
+source=vsin("vin",1,0;)
+
+components=[opamp(;name="OA1",nplus=1,nminus=2,out=3),
+            resistor("RI",2,0,RI),
+            diode("D1",3,4,D),
+            vdc("vm1",4,2,0)
+            ]
+
+netlist="""
+* Transconductance configuration driving LED
+
+.include models/diodes.sp
+.include models/two_stage_opamp.sp
+
+$source
+$components
+
+.end
+"""
+
+
+load_netlist(netlist)
+
+
+tstep = 10u"μs"
+tmax  = 4u"ms"
+
+simulate(:tran;tstep,tmax)
+
+plot([i"vm1"];labels=["Iout"])
+

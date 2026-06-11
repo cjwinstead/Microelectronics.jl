@@ -1,0 +1,39 @@
+using Microelectronics
+
+RF = 2u"kΩ"
+RI = 1u"kΩ"
+
+fs = 1u"kHz"
+Vs = 1u"V"
+
+Ts = 1/fs |> u"s"
+
+tmax  = 4*Ts
+tstep = Ts/20
+
+source = vsin("v1",1,0;frequency=fs,amplitude=Vs)
+
+components = [ resistor("RI",1,2, RI),
+               resistor("RF",2,3, RF),
+               opamp(name="OA1",nplus=4,nminus=0,out=3,model="two_stage_opamp")
+               ]
+
+netlist="""
+* Half Wave Rectifier
+
+.include models/two_stage_opamp.sp
+
+$source
+$components
+
+.end
+"""
+
+load_netlist(netlist)
+
+transient(;tmax,tstep)
+
+plot(tran_time(),[node"1",node"2"])
+
+
+
