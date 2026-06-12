@@ -5,6 +5,7 @@ authors = ["Chris Winstead <chris.winstead@usu.edu> and contributors"]
 
 [deps]
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
+LazyModules = "8cdb02fc-e678-4876-92c5-9defec4f444e"
 Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
 NgHerb = "16d751f2-2168-46b0-9d00-9e1470832ba3"
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
@@ -15,6 +16,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
 LaTeXStrings = "1.4.0"
+LazyModules = "0.3.1"
 Markdown = "1.11.0"
 NgHerb = "0.2.1"
 OrderedCollections = "1.8.1"

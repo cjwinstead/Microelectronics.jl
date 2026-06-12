@@ -1,9 +1,10 @@
 module Microelectronics
 
+using LazyModules
 using Reexport
 @reexport using OrderedCollections,LaTeXStrings,Markdown,Unitful,Printf, Plots
 
-@reexport using NgHerb
+@lazy import NgHerb = "16d751f2-2168-46b0-9d00-9e1470832ba3"
 
 import Base.show
 import Base.print
@@ -39,6 +40,7 @@ device_prefixes = OrderedDict{String,String}(val=>key for (key,val) in device_ty
 counts -- used for auto-named instances
 =#
 counts = Dict{String,Int}()
+
 
 
 #============== Convenience Functions ==============#
@@ -661,7 +663,7 @@ function build_netlist(s="";title="circuit",parameters="",models="",sources="",c
     end
     println(io,".end")
     netlist=String(take!(seekstart(io)))
-    #load_netlist(netlist)
+    load_netlist(netlist)
     netlist
 end
 export build_netlist
@@ -673,10 +675,10 @@ export build_netlist
 
 Calls the NgHerb `load_netlist` function.
 """
-# function load_netlist(n::AbstractString)
-#     NgHerb.load_netlist(n)
-# end
-# export load_netlist
+function load_netlist(n::AbstractString)
+    NgHerb.load_netlist(n)
+end
+export load_netlist
 
 
 
@@ -1357,8 +1359,56 @@ macro pwl_str(s)
 end
 
 
+#================ Special Strings =====================#
+# ng"" sends the quoted command to the simulator
+macro ng_str(s)
+    NgHerb.cmd(s)    
+end
+
+# real"" retrieves the real-valued part of the indicated vector
+macro real_str(s)
+    NgHerb.getrealvec(s)
+end
+
+# imag"" retrieves the imaginary-valued part of the indicated vector
+macro imag_str(s)
+    NgHerb.getimaginaryvec(s)
+end
+
+# i"" retrieves the current in the indicated voltage source
+macro i_str(s)
+    NgHerb.getrealvec(s*"#branch")
+end
+
+# magnitude"" retrieves the complex magnitude of the indicated vector
+macro magnitude_str(s)
+    NgHerb.getmagnitudevec(s)
+end
+
+# dB"" retrieves a magnitude vector and converts to dB20
+macro dB_str(s)
+    20.0 .* log10.(NgHerb.getmagnitudevec(s))
+end
+
+# phase"" retrieves a phase vector and converts to degrees
+macro phase_str(s)
+    (180/π).*NgHerb.getphasevec(s)
+end
+
+# vec"" returns a vector, possibly complex 
+macro vec_str(s)
+    NgHerb.getvec(s)
+end
+
+
+
+
+export @ng_str, @real_str, @imag_str, @i_str, @magnitude_str, @dB_str, @phase_str, @vec_str
+
+
 export @table
 export @pwl_str
+
 
 
 
