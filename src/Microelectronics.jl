@@ -1385,23 +1385,25 @@ end
 # i"" retrieves the current in the indicated voltage source
 macro i_str(s)
     i=NgHerb.getrealvec(s*"#branch").*u"A"
-    imax=maximum(i)
+    imax=abs(maximum(i))
     for u in (u"A",u"mA",u"μA",u"nA",u"pA")
-        if imax > 1*u
+        if imax >= 1*u
             return uconvert.(u,i)
         end
-    end    
+    end
+    return i
 end
 
 # node"" retrieves voltage at the indicated node, relative to ground
 macro node_str(s)
     v=NgHerb.getrealvec(s).*u"V"
-    vmax=maximum(v)
+    vmax=abs(maximum(v))
     for u in (u"kV",u"V",u"mV",u"μV",u"nV",u"pV")
-        if vmax > 1*u
+        if vmax >= 1*u
             return uconvert.(u,v)
         end
-    end    
+    end
+    return v
 end
 
 
