@@ -958,7 +958,13 @@ export ac
 Returns the `time` vector from NGSpice.
 """
 function tran_time()
-    NgHerb.getrealvec("time")
+    t=NgHerb.getrealvec("time").*u"s"
+    tmax=maximum(t)
+    for u in (u"s",u"ms",u"μs",u"ns",u"ps")
+        if tmax > 1*u
+            return uconvert.(u,t)
+        end
+    end    
 end
 export tran_time
 
@@ -1209,7 +1215,8 @@ julia> plot([dB"1",dB"2"];xscale=:log10,labels=["v1" "v2"])
 function plot(v::Vector{Vector};args...)
     pl=NgHerb.curplot()
     if occursin("tran",pl)
-        plot(tran_time(),v;args...)
+        t=tran_time()
+        plot(t,v;xlabel="Time [$(unit(t[1]))]",args...)
     elseif occursin("dc",pl)
         plot(dc_sweep(),v;args...)
     elseif occursin("ac",pl)
@@ -1377,8 +1384,26 @@ end
 
 # i"" retrieves the current in the indicated voltage source
 macro i_str(s)
-    NgHerb.getrealvec(s*"#branch")
+    i=NgHerb.getrealvec(s*"#branch").*u"A"
+    imax=maximum(i)
+    for u in (u"A",u"mA",u"μA",u"nA",u"pA")
+        if imax > 1*u
+            return uconvert.(u,i)
+        end
+    end    
 end
+
+# node"" retrieves voltage at the indicated node, relative to ground
+macro node_str(s)
+    v=NgHerb.getrealvec(s).*u"V"
+    vmax=maximum(v)
+    for u in (u"kV",u"V",u"mV",u"μV",u"nV",u"pV")
+        if vmax > 1*u
+            return uconvert.(u,v)
+        end
+    end    
+end
+
 
 # magnitude"" retrieves the complex magnitude of the indicated vector
 macro magnitude_str(s)
@@ -1387,12 +1412,12 @@ end
 
 # dB"" retrieves a magnitude vector and converts to dB20
 macro dB_str(s)
-    20.0 .* log10.(NgHerb.getmagnitudevec(s))
+    20.0 .* log10.(NgHerb.getmagnitudevec(s)).*u"dB"
 end
 
 # phase"" retrieves a phase vector and converts to degrees
 macro phase_str(s)
-    (180/π).*NgHerb.getphasevec(s)
+    (180/π).*NgHerb.getphasevec(s).*u"°"
 end
 
 # vec"" returns a vector, possibly complex 
@@ -1403,7 +1428,7 @@ end
 
 
 
-export @ng_str, @real_str, @imag_str, @i_str, @magnitude_str, @dB_str, @phase_str, @vec_str
+export @ng_str, @real_str, @imag_str, @node_str, @i_str, @magnitude_str, @dB_str, @phase_str, @vec_str
 
 
 export @table
