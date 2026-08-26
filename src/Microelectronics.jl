@@ -45,6 +45,24 @@ function scale_Hz(f::Quantity)
     return f
 end
 
+function scale_s(s::Quantity)
+    if s >= 1u"s"
+        return uconvert(u"s", s)
+    elseif s >= 1u"ms"
+        return uconvert(u"ms", s)
+    elseif s >= 1u"μs"
+        return uconvert(u"μs", s)
+    elseif s >= 1u"ns"
+        return uconvert(u"ns", s)
+    elseif s >= 1u"ps"
+        return uconvert(u"ps", s)
+    elseif s >= 1u"fs"
+        return uconvert(u"fs", s)
+    end
+
+    return s
+end
+
 function scale_rad(f::Quantity)
     if f >= 1u"Grad/s"
         return uconvert(u"Grad/s", f)
@@ -143,6 +161,8 @@ function scale_quantity(x::Quantity)
         return scale_rad(x)
     elseif isHz(x)
         return scale_Hz(x)
+    elseif iss(x)
+        return scale_s(x)
     elseif isresistor(x)
         return scale_resistor(x)
     elseif iscapacitor(x)
@@ -161,7 +181,7 @@ end
 function model_library()
     joinpath(pkgdir(Microelectronics),"model_library.sp")
 end
-export parallel, scale_radps, scale_quantity, scale_resistor, scale_Hz, scale_capacitor, model_library
+export parallel, scale_radps, scale_quantity, scale_resistor, scale_Hz, scale_capacitor, model_library, scale_s
 
 function be_quiet()
     NgHerb.be_quiet()
@@ -276,6 +296,10 @@ function israd(x::Quantity)
     Unitful.dimension(x) == Unitful.dimension(1u"rad") && contains(string(x),"rad")
 end
 
+function iss(x::Quantity)
+    Unitful.dimension(x) == Unitful.dimension(1u"s")
+end
+
 function isHz(x::Quantity)
     Unitful.dimension(x) == Unitful.dimension(1u"Hz") && contains(string(x),"Hz")
 end
@@ -337,7 +361,7 @@ end
 function rad(x::Number)
     x*u"rad"
 end
-export rad, israd, isradps, isHz, is°, isvoltage, iscurrent, isresistor, iscapacitor, istransconductance
+export rad, israd, isradps, isHz, is°, isvoltage, iscurrent, isresistor, iscapacitor, istransconductance, iss
 
 
 """
