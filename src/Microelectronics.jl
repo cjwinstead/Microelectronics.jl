@@ -349,7 +349,7 @@ function rad(x::Quantity)
     if contains(string(x),r".*Hz$")
         return uconvert(u"rad/s",x*2π)
     elseif unit(x) == u"°"
-        return uconvert(u"rad",x*2π)
+        return uconvert(u"rad",x)
     elseif unit(upreferred(x)) == u"s^-1"
         return uconvert(u"rad/s",x)
     elseif unit(upreferred(x)) == 1
@@ -379,7 +379,7 @@ function °(x::Quantity)
     if unit(x) == u"rad*s^-1"
         return uconvert(u"Hz",x/2π)
     elseif unit(x) == u"rad"
-        return uconvert(u"°",x/2π)
+        return uconvert(u"°",x)
     elseif unit(upreferred(x)) == u"s^-1"
         return uconvert(u"Hz",x)
     elseif !(typeof(upreferred(x)) <: Quantity)
