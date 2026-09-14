@@ -2,7 +2,7 @@ module Microelectronics
 
 using LazyModules
 using Reexport
-@reexport using OrderedCollections,LaTeXStrings,Markdown,Unitful,Printf,Plots
+@reexport using OrderedCollections,LaTeXStrings,Markdown,Unitful,Printf,Interpolations,Plots
 
 @lazy import NgHerb = "16d751f2-2168-46b0-9d00-9e1470832ba3"
 
@@ -194,6 +194,10 @@ export be_quiet,dumpbuffer
 
 function (=>)(x::Quantity,s::Unitful.FreeUnits)
     uconvert(s,x)
+end
+
+function (=>)(x::Number,s::Unitful.FreeUnits)
+    s*x
 end
 
 
@@ -1246,6 +1250,39 @@ function ac(;start,stop,mode,steps)
     NgHerb.cmd(s)
 end
 export ac
+
+
+
+function fft(node::String; frequency=1u"kHz", N=20, D=50)
+    T = 1/frequency => u"s"
+    tstep = T/D
+    tmax  = N*T
+    simulate(:tran;tstep,tmax)
+    NgHerb.cmd("linearize")
+    NgHerb.cmd("fft v($node)")
+    f = NgHerb.getrealvec("frequency")
+    phase = NgHerb.getphasevec(node)
+    mag = NgHerb.getmagnitudevec(node)
+    db  = dB20.(mag)
+    return (;fundamental=frequency,f,mag,phase,db)
+end
+export fft
+
+
+
+function distortion(spectrum::NamedTuple)
+    f0 = ustrip(spectrum.fundamental => u"Hz")
+    f = spectrum.f 
+    v = spectrum.mag
+    ϕ = spectrum.phase
+    intrp_v = linear_interpolation(f,v)
+    intrp_ϕ = linear_interpolation(f,ϕ)
+    f_harmonic = f0 .* collect(1:10)
+    harmonics  = [ (intrp_v(fh), intrp_ϕ(fh)) for fh in f_harmonic if fh < maximum(f) ]
+    thd = sqrt(sum(x[1]^2 for x in harmonics[2:end]))/harmonics[1][1]
+    return (; spectrum..., harmonics, thd)
+end
+export distortion
 
 
 """

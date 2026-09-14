@@ -26,6 +26,15 @@ mutable struct Waveform
     parameters::Union{Vector{Point},OrderedDict{String,Any}}
 end
 
+struct Spectrum
+    fundamental::Quantity
+    f::Vector{Quantity}
+    mag::Vector{Quantity}
+    phase::Vector{Quantity}
+    db::Vector{Gain}  
+    harmonics::Vector{Tuple{Quantity,Quantity}}
+    thd::Float64
+end
 
 abstract type Element end
 abstract type DependentSource <: Element end
@@ -201,6 +210,29 @@ $(U)pulse(name,nplus,nminus;args...)       = Source(;species="$(u)source",prefix
         eval(Meta.parse("export $(U)$(w)"))
     end
 end
+
+
+function Spectrum(node::String,fundamental::Quantity;N=20,D=50)
+    spectrum = fft(node;frequency=fundamental)
+    spectrum = distortion(spectrum)
+    println("completed fft and distortion analysis")
+    f     = spectrum.f .* u"Hz"
+    mag  = spectrum.mag .* u"V"
+    println("added units to frequency and magnitude vectors")
+    db   = spectrum.db .* u"dB"
+    println("added units to db vector")
+    phase = spectrum.phase .* u"rad"
+    println("added units to phase vector")
+    thd   = spectrum.thd
+
+    harmonics  = [ (h[1]*u"V",h[2]*u"rad") for h in spectrum.harmonics]
+    println("added units to harmonics vector")
+    
+    Spectrum(fundamental,
+             f,mag,phase,db,
+             harmonics,thd)
+end
+export Spectrum
 
 
 function alter(s::Source;frequency=nothing,amplitude=nothing,offset=nothing,phase=nothing)

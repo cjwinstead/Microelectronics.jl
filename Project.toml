@@ -1,9 +1,10 @@
 name = "Microelectronics"
 uuid = "7558d6fc-9aaf-4343-9ca4-2cb62773acb1"
-version = "1.0.0-DEV"
+version = "1.0.1"
 authors = ["Chris Winstead <chris.winstead@usu.edu> and contributors"]
 
 [deps]
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LazyModules = "8cdb02fc-e678-4876-92c5-9defec4f444e"
 Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
@@ -15,6 +16,7 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
+Interpolations = "0.16.3"
 LaTeXStrings = "1.4.0"
 LazyModules = "0.3.1"
 Markdown = "1.11.0"
