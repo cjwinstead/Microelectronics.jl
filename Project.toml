@@ -1,6 +1,6 @@
 name = "Microelectronics"
 uuid = "7558d6fc-9aaf-4343-9ca4-2cb62773acb1"
-version = "1.0.1"
+version = "1.0.2"
 authors = ["Chris Winstead <chris.winstead@usu.edu> and contributors"]
 
 [deps]

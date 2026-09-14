@@ -1744,8 +1744,8 @@ function measure(::Val{:Gm};in,out)
     if occursin("tran",NgHerb.curplot())
         NgHerb.cmd("meas tran iopp pp i($out)")
         NgHerb.cmd("meas tran vipp pp v($in)")
-        iopp=NgHerb.getrealvec("iopp")[1]
-        vipp=NgHerb.getrealvec("vipp")[1]
+        iopp=NgHerb.getrealvec("iopp")[1]*u"A"
+        vipp=NgHerb.getrealvec("vipp")[1]*u"V"
         return iopp/vipp        
     end
 end
@@ -1777,7 +1777,7 @@ function measure(::Val{:cutoff};name)
         mag = dB20.(magnitudes(vname)[1])
         cutoff_mag = maximum(mag) - 3.0
         NgHerb.cmd("meas ac fc when vdb($vname)=$cutoff_mag")
-        return NgHerb.getrealvec("fc")[1]
+        return NgHerb.getrealvec("fc")[1]*u"Hz"
     end
 end
 
