@@ -109,7 +109,7 @@ tstr(s) = strip(replace(s,rgx))
 
     simulate(:dc;device="v1",start=0,stop=1,step=0.5)
     @test dc_sweep() == [0,0.5,1]
-    @test node"1"==[0,0.5,1]
+    @test node"1"==[0,0.5,1]u"V"
     @test i"v1"==[0.0,0.0,0.0]
 
     simulate(:ac;start=10u"rad/s",stop=1u"Mrad/s",steps=1)

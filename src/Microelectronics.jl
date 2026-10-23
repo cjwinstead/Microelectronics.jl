@@ -1,10 +1,13 @@
 module Microelectronics
 
-using LazyModules
 using Reexport
 @reexport using OrderedCollections,LaTeXStrings,Markdown,Unitful,Printf,Interpolations,Plots
 
-@lazy import NgHerb = "16d751f2-2168-46b0-9d00-9e1470832ba3"
+# String macros (ng"", real"", imag"", i"", magnitude"", dB"", phase"", vec"")
+# come from NgHerb and are re-exported below.
+import NgHerb
+using NgHerb: @ng_str, @real_str, @imag_str, @i_str, @magnitude_str,
+              @dB_str, @phase_str, @vec_str
 
 import Base.show
 import Base.print
@@ -1831,37 +1834,18 @@ end
 
 
 #================ Special Strings =====================#
-# ng"" sends the quoted command to the simulator
-macro ng_str(s)
-    NgHerb.cmd(s)    
-end
+# ng"", real"", imag"", i"", magnitude"", dB"", phase"" and vec"" are provided
+# by NgHerb and re-exported here. node"" is specific to Microelectronics.
 
-# real"" retrieves the real-valued part of the indicated vector
-macro real_str(s)
-    NgHerb.getrealvec(s)
-end
+"""
+   node_voltage(name)
 
-# imag"" retrieves the imaginary-valued part of the indicated vector
-macro imag_str(s)
-    NgHerb.getimagvec(s)
-end
-
-# i"" retrieves the current in the indicated voltage source
-macro i_str(s)
-    i=NgHerb.getrealvec(s*"#branch").*u"A"
-    imax=abs(maximum(i))
-    for u in (u"A",u"mA",u"μA",u"nA",u"pA")
-        if imax >= 1*u
-            return uconvert.(u,i)
-        end
-    end
-    return i
-end
-
-# node"" retrieves voltage at the indicated node, relative to ground
-macro node_str(s)
-    v=NgHerb.getrealvec(s).*u"V"
-    vmax=abs(maximum(v))
+Return the voltage at node `name` from the most recent simulation, as a
+Unitful vector scaled to a readable prefix (kV, V, mV, ...).
+"""
+function node_voltage(name)
+    v = NgHerb.getrealvec(string(name)) .* u"V"
+    vmax = isempty(v) ? 0u"V" : maximum(abs.(v))
     for u in (u"kV",u"V",u"mV",u"μV",u"nV",u"pV")
         if vmax >= 1*u
             return uconvert.(u,v)
@@ -1869,29 +1853,13 @@ macro node_str(s)
     end
     return v
 end
+export node_voltage
 
-
-# magnitude"" retrieves the complex magnitude of the indicated vector
-macro magnitude_str(s)
-    NgHerb.getmagnitudevec(s)
+# node"" retrieves voltage at the indicated node, relative to ground.
+# It expands to a call, so it reads the simulator each time the code runs.
+macro node_str(s)
+    :(node_voltage($s))
 end
-
-# dB"" retrieves a magnitude vector and converts to dB20
-macro dB_str(s)
-    20.0 .* log10.(NgHerb.getmagnitudevec(s)).*u"dB"
-end
-
-# phase"" retrieves a phase vector and converts to degrees
-macro phase_str(s)
-    (180/π).*NgHerb.getphasevec(s).*u"°"
-end
-
-# vec"" returns a vector, possibly complex 
-macro vec_str(s)
-    NgHerb.getvec(s)
-end
-
-
 
 
 export @ng_str, @real_str, @imag_str, @node_str, @i_str, @magnitude_str, @dB_str, @phase_str, @vec_str
