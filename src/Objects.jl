@@ -44,7 +44,7 @@ abstract type DependentSource <: Element end
     nplus::String
     nminus::String
     control::String
-    gain::Float64
+    gain::Union{Float64,String,Symbol}
 end
 
 @kwdef struct VCCS <: DependentSource
@@ -52,7 +52,7 @@ end
     nplus::String
     nminus::String
     control::Vector{String}
-    gain::Float64
+    gain::Union{Float64,String,Symbol}
 end
 
 @kwdef struct CCVS <: DependentSource
@@ -60,7 +60,7 @@ end
     nplus::String
     nminus::String
     control::String
-    gain::Float64
+    gain::Union{Float64,String,Symbol}
 end
 
 @kwdef struct VCVS <: DependentSource
@@ -68,7 +68,7 @@ end
     nplus::String
     nminus::String
     control::Vector{String}
-    gain::Float64
+    gain::Union{Float64,String,Symbol}
 end
 
 mutable struct Source <: Element
