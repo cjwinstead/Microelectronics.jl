@@ -31,7 +31,7 @@ struct Spectrum
     f::Vector{Quantity}
     mag::Vector{Quantity}
     phase::Vector{Quantity}
-    db::Vector{Gain}  
+    db::Vector{}  
     harmonics::Vector{Tuple{Quantity,Quantity}}
     thd::Float64
 end
@@ -44,7 +44,7 @@ abstract type DependentSource <: Element end
     nplus::String
     nminus::String
     control::String
-    gain::Float64
+    gain::Union{Number,Quantity,String,Symbol}
 end
 
 @kwdef struct VCCS <: DependentSource
@@ -52,7 +52,7 @@ end
     nplus::String
     nminus::String
     control::Vector{String}
-    gain::Float64
+    gain::Union{Number,Quantity,String,Symbol}
 end
 
 @kwdef struct CCVS <: DependentSource
@@ -60,7 +60,7 @@ end
     nplus::String
     nminus::String
     control::String
-    gain::Float64
+    gain::Union{Number,Quantity,String,Symbol}
 end
 
 @kwdef struct VCVS <: DependentSource
@@ -68,7 +68,7 @@ end
     nplus::String
     nminus::String
     control::Vector{String}
-    gain::Float64
+    gain::Union{Number,Quantity,String,Symbol}
 end
 
 mutable struct Source <: Element
