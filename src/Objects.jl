@@ -14,11 +14,12 @@ struct Point
     time::Number
     value::Number
 end
+Point(t::Tuple) = Point(t[1],t[2])
 
 
 mutable struct Parameter
     name::String
-    value::Number
+    value::Union{Number,String,Symbol}
 end
 
 mutable struct Waveform
@@ -38,6 +39,18 @@ end
 
 abstract type Element end
 abstract type DependentSource <: Element end
+
+"""
+   SpiceLine(text)
+
+A line (or block) of raw SPICE text. Netlists wrap any String they are
+given in a SpiceLine, so text from the older string-returning functions
+can be mixed freely with element objects.
+"""
+struct SpiceLine <: Element
+    text::String
+    SpiceLine(text::AbstractString) = new(rstrip(text,['\n','\r']))
+end
 
 @kwdef struct CCCS <: DependentSource
     name::String
@@ -104,10 +117,10 @@ end
 
 struct Netlist 
     title::String
-    models::Vector{Union{Model,Subcircuit}}
+    models::Vector{Union{Model,Subcircuit,SpiceLine}}
     includes::Vector{Include}
-    parameters::Vector{Parameter}
-    sources::Vector{Source}
+    parameters::Vector{Union{Parameter,SpiceLine}}
+    sources::Vector{Element}
     components::Vector{Element}
 end
 
@@ -125,16 +138,58 @@ end
 
 
 
-export Subcircuit,Element,CCCS,VCVS,VCCS,CCVS
+export Subcircuit,Element,CCCS,VCVS,VCCS,CCVS,SpiceLine
 
-Netlist(;title="cicuit",models=Vector{Model}(),includes=Vector{Include}([Include(realpath(dirname(pathof(@__MODULE__))*"/../model_library.sp"))]),parameters=Vector{Parameter}(),sources=Vector{Source}(),components=Vector{Component}())=Netlist(title,models,includes,parameters,sources,components)
+#=
+Netlist contents can be given as objects, Strings (from the string API),
+OrderedDicts (from @table), or nested vectors of these. netlist_items
+flattens all of that into a list of objects.
+=#
+netlist_items(x) = Any[x]
+netlist_items(::Nothing) = Any[]
+netlist_items(x::AbstractString) = isempty(strip(x)) ? Any[] : Any[SpiceLine(x)]
+netlist_items(x::AbstractVector) = reduce(vcat, map(netlist_items,x); init=Any[])
+netlist_items(x::AbstractDict) = Any[Parameter(x)...]
+netlist_items(x::Union{Tuple,Pair}) = Any[Parameter(x)]
+
+function Netlist(;title="circuit",models=[],includes=[Include(model_library())],
+                 parameters=[],sources=[],components=[])
+    includes = [x isa Include ? x : Include(string(x))
+                for x in (includes isa AbstractVector ? includes : [includes])]
+    Netlist(string(title),
+            netlist_items(models),
+            includes,
+            netlist_items(parameters),
+            netlist_items(sources),
+            netlist_items(components))
+end
         
 load_netlist(n::Netlist) = load_netlist(string(n))
 export load_netlist
 
 Parameter(t::Tuple) = Parameter(string(t[1]),t[2])
-Parameter(v::Vector) = [Parameter(t) for t in v]
-Parameter(d::OrderedDict{String,T}) where T<:Number = [Parameter(k,d[k]) for k in keys(d)]
+Parameter(p::Pair) = Parameter(string(p.first),p.second)
+Parameter(v::Vector) = [x isa Parameter ? x : Parameter(x) for x in v]
+Parameter(d::AbstractDict) = [Parameter(string(k),v) for (k,v) in d]
+
+#=
+Node names may be given as Integers, Strings or Symbols. A Quantity in a
+node position is almost always an argument-order mistake, such as
+vdc(1,0,5u"V") where vdc(name,nplus,nminus,value) was meant.
+=#
+function node_name(x)
+    x isa Quantity && throw(ArgumentError(
+        "a node name can't be a quantity ($x). Check the argument order: " *
+        "most elements take (name, nplus, nminus, value)."))
+    string(x)
+end
+node_names(v) = [node_name(x) for x in v]
+
+# Prepend the SPICE prefix letter `p` unless `name` already starts with it.
+with_prefix(p,name) = (n = string(name); uppercase(first(n,1)) == uppercase(p) ? n : p*n)
+
+# Use the given name, or generate the next one (R1, R2, ...) if none is given.
+element_name(prefix,name) = (isnothing(name) || name == "") ? nextname(prefix) : string(name)
 
 Base.convert(::Type{Vector{Parameter}},d::OrderedDict) = Parameter(d)
 
@@ -147,52 +202,63 @@ function fixname!(c::Component)
     c
 end
 
-Component(;name="",species="",prefix="",nodes=[],model=nothing,value=nothing,parameters=[]) = fixname!(Component(name,species,prefix,nodes,value,model,parameters))
+function Component(;name=nothing,species="",prefix="",nodes=[],model=nothing,value=nothing,parameters=Parameter[])
+    params = parameters isa AbstractDict ? Parameter(parameters) : Parameter[Parameter(parameters)...]
+    fixname!(Component(element_name(prefix,name),species,prefix,node_names(nodes),value,
+                       isnothing(model) ? nothing : string(model),params))
+end
 
-Resistor(name,nplus,nminus,value) = Component(;name,nodes=string.([nplus,nminus]),value,species="resistor",prefix="R")
-Resistor(;name,nplus,nminus,value) = Resistor(name,nplus,nminus,value)
-Capacitor(name,nplus,nminus,value) = Component(;name,nodes=string.([nplus,nminus]),value,species="capacitor",prefix="C")
-Capacitor(;name,nplus,nminus,value) = Capacitor(name,nplus,nminus,value)
-Inductor(name,nplus,nminus,value) = Component(;name,nodes=string.([nplus,nminus]),value,species="inductor",prefix="L")
-Inductor(;name,nplus,nminus,value) = Inductor(name,nplus,nminus,value)
-Diode(name,nplus,nminus,model) = Component(;name,nodes=string.([nplus,nminus]),model,species="diode",prefix="D")
-Diode(;name,nplus,nminus,model) = Diode(name,nplus,nminus,model)
-Subckt(name,nodes::Vector,model::String,parameters=Vector{Parameter}())=Component(;name,prefix="X",nodes=string.(nodes),model,parameters)
-Subckt(;name,nodes::Vector,model::String,parameters=Vector{Parameter}())=Subckt(name,nodes,model,parameters)
+Resistor(name,nplus,nminus,value) = Component(;name,nodes=(nplus,nminus),value,species="resistor",prefix="R")
+Resistor(;name=nothing,nplus,nminus,value) = Resistor(name,nplus,nminus,value)
+Capacitor(name,nplus,nminus,value) = Component(;name,nodes=(nplus,nminus),value,species="capacitor",prefix="C")
+Capacitor(;name=nothing,nplus,nminus,value) = Capacitor(name,nplus,nminus,value)
+Inductor(name,nplus,nminus,value) = Component(;name,nodes=(nplus,nminus),value,species="inductor",prefix="L")
+Inductor(;name=nothing,nplus,nminus,value) = Inductor(name,nplus,nminus,value)
+Diode(name,nplus,nminus,model) = Component(;name,nodes=(nplus,nminus),model,species="diode",prefix="D")
+Diode(;name=nothing,nplus,nminus,model) = Diode(name,nplus,nminus,model)
+Subckt(name,nodes,model::AbstractString,parameters=Vector{Parameter}())=Component(;name,prefix="X",nodes,model,parameters)
+Subckt(;name=nothing,nodes,model::AbstractString,parameters=Vector{Parameter}())=Subckt(name,nodes,model,parameters)
 Instance(args...;kwargs...) = Subckt(args...;kwargs...)
 
-Opamp(name,nplus,nminus,out,model,parameters=Vector{Parameter}())=Subckt(name,[nplus,nminus,out],model,parameters)
+Opamp(name,nplus,nminus,out,model,parameters=Vector{Parameter}())=Subckt(name,(nplus,nminus,out),model,parameters)
 Opamp(;name,nplus,nminus,out,model,parameters=Vector{Parameter}())=Opamp(name,nplus,nminus,out,model,parameters)
-MOSFET(name,drain,gate,source,substrate,model,parameters=[]) = Component(;name,nodes=string.([drain,gate,source,substrate]),model,parameters,species="mosfet",prefix="M")
+MOSFET(name,drain,gate,source,substrate,model,parameters=Parameter[]) = Component(;name,nodes=(drain,gate,source,substrate),model,parameters,species="mosfet",prefix="M")
+MOSFET(;name=nothing,drain,gate,source,substrate,model,parameters=Parameter[]) = MOSFET(name,drain,gate,source,substrate,model,parameters)
 
-Waveform(;wave=:dc,parameters=[])=Waveform(wave,parameters)
+Waveform(;wave=:dc,parameters=OrderedDict{String,Any}())=Waveform(wave,parameters)
 Waveform(s::Symbol,args...;kwargs...) = Waveform(Val(s),args...;kwargs...)
-Waveform(::Val{:dc},value) = Waveform(wave=:dc,parameters=OrderedDict{String,Any}("value"=>value))
-Waveform(::Val{:ac},value=1) = Waveform(wave=:ac,parameters=OrderedDict{String,Any}("value"=>value))
-Waveform(::Val{:sin},offset,amplitude,frequency,phase,args...) = Waveform(wave=:sin,parameters=OrderedDict{String,Any}("offset"=>offset,"amplitude"=>amplitude,"frequency"=>frequency,"phase"=>phase))
-Waveform(::Val{:sin};offset=0u"V",amplitude=5u"mV",frequency=1u"kHz",phase=0u"°",args...)=Waveform(:sin,offset,amplitude,frequency,phase)
-Waveform(::Val{:pwl},points::Vector{Point};args...) = Waveform(wave=:pwl,parameters=points;args...)
-Waveform(::Val{:pulse},low,high,delay,risetime,falltime,width,period,pulses;args...) = Waveform(wave=:pulse,parameters=OrderedDict{String,Any}("high"=>high,"low"=>low,"delay"=>delay,"risetime"=>risetime,"falltime"=>falltime,"width"=>width,"period"=>period,"pulses"=>pulses);args...)
-Waveform(::Val{:pulse};high=5u"V",low=0u"V",risetime=1u"ns",falltime=1u"ns",width=499u"ns",period=1u"ms",delay=0,pulses=0,args...)=Waveform(:pulse,low,high,delay,risetime,falltime,width,period,pulses;args...)
+Waveform(::Val{:dc},value=0;kwargs...) = Waveform(:dc,OrderedDict{String,Any}("value"=>value))
+Waveform(::Val{:ac},value=1;kwargs...) = Waveform(:ac,OrderedDict{String,Any}("value"=>value))
+Waveform(::Val{:sin},offset,amplitude,frequency,phase=SIN_DEFAULTS.phase,args...;kwargs...) =
+    Waveform(:sin,OrderedDict{String,Any}("offset"=>offset,"amplitude"=>amplitude,"frequency"=>frequency,"phase"=>phase))
+Waveform(::Val{:sin};offset=SIN_DEFAULTS.offset,amplitude=SIN_DEFAULTS.amplitude,
+         frequency=SIN_DEFAULTS.frequency,phase=SIN_DEFAULTS.phase,kwargs...) =
+    Waveform(:sin,offset,amplitude,frequency,phase)
+Waveform(::Val{:pwl},points::AbstractVector;kwargs...) = Waveform(:pwl,Point[p isa Point ? p : Point(p) for p in points])
+Waveform(::Val{:pulse},low,high,delay,risetime,falltime,width,period,pulses="";kwargs...) =
+    Waveform(:pulse;low,high,delay,risetime,falltime,width,period,pulses)
+Waveform(::Val{:pulse};kwargs...) =
+    Waveform(:pulse,OrderedDict{String,Any}(string(k)=>v for (k,v) in pairs(merge(PULSE_DEFAULTS,
+             (k=>v for (k,v) in pairs(kwargs) if haskey(PULSE_DEFAULTS,k))))))
+# Raw SPICE text for a source value, e.g. "DISTOF1 0.1"
+Waveform(::Val{:raw},text;kwargs...) = Waveform(:raw,OrderedDict{String,Any}("text"=>string(text)))
 
-function Source(;species="vsource",prefix="V",name,nplus,nminus,waveforms::Vector{Waveform},args...)
-    if :ac ∈ keys(args) && args[:ac]≠0
-        push!(waveforms,Waveform(:ac,args[:ac]))
-    end
-    if :dc ∈ keys(args)
+function Source(;species="vsource",prefix="V",name=nothing,nplus,nminus,waveforms=Waveform[],args...)
+    waveforms = Waveform[waveforms...]     # copy, so the caller's vector isn't modified
+    if haskey(args,:dc)
         push!(waveforms,Waveform(:dc,args[:dc]))
     end
-    if :pwl ∈ keys(args)
+    if haskey(args,:ac) && args[:ac] != 0
+        push!(waveforms,Waveform(:ac,args[:ac]))
+    end
+    if haskey(args,:pwl)
         push!(waveforms,Waveform(:pwl,args[:pwl]))
     end
-    if :pulse ∈ keys(args)
+    if haskey(args,:pulse)
         push!(waveforms,Waveform(:pulse,args[:pulse]...))
     end
-
-    if lowercase(name)[1] != lowercase(prefix)[1]
-        name = string(prefix,name)
-    end
-    Source(name,species,prefix,string.([nplus,nminus]),waveforms)
+    name = with_prefix(prefix,element_name(prefix,name))
+    Source(name,species,prefix,node_names((nplus,nminus)),waveforms)
 end
 
 for U in ("V","I")
@@ -263,15 +329,10 @@ function alter(s::Source;frequency=nothing,amplitude=nothing,offset=nothing,phas
     if length(i) == 1
         idx = i[1]
         p = s.waveforms[i[1]].parameters 
-        if !isnothing(frequency)
-            p["frequency"] = frequency
-        elseif !isnothing(amplitude)
-            p["amplitude"] = amplitude
-        elseif !isnothing(offset)
-            p["offset"] = offset
-        elseif !isnothing(phase)
-            p["phase"] = phase
-        end
+        isnothing(frequency) || (p["frequency"] = frequency)
+        isnothing(amplitude) || (p["amplitude"] = amplitude)
+        isnothing(offset)    || (p["offset"] = offset)
+        isnothing(phase)     || (p["phase"] = phase)
     else
         println("warning: source must have exactly one sinusoidal waveform")
     end
@@ -287,8 +348,22 @@ function Base.print(io::IO,p::Point)
 end
 
 function Base.print(io::IO,p::Parameter)
-    print(io,p.name,"=",qstr(p.value)," ")
+    print(io,p.name,"=",qstr(p.value))
     return nothing
+end
+
+Base.print(io::IO,l::SpiceLine) = print(io,l.text)
+
+function Base.print(io::IO,m::Model)
+    d = strip(m.definition)
+    print(io, startswith(d,".") ? d : ".model $(m.name) $d")
+end
+
+# Name and nodes in aligned columns, then the remaining fields:
+#   R1    1     2     1000
+function spice_fields(name,nodes,rest...)
+    fields = [rpad(name,5); rpad.(nodes,5); [r for r in rest if !isempty(r)]]
+    rstrip(join(fields," "))
 end
 
 function Base.print(io::IO,v::Vector{T} where T <: Element )
@@ -306,27 +381,25 @@ function Base.print(io::IO,v::Vector{Point})
 end
 
 function Base.print(io::IO,i::Include)
-    print.(io,".include ",i.filename)
+    print(io,".include ",i.filename)
     return nothing
 end
 
+# All waveform text comes from the shared formatters (sin_string etc.)
 function Base.print(io::IO,w::Waveform)
+    p = w.parameters
     if w.wave == :dc
-        print(io, " dc ")
-    elseif w.wave == :sin
-        print(io," sin (")
-    elseif w.wave == :pwl
-        print(io, " pwl (")
-    elseif w.wave == :pulse
-        print(io, " pulse (")
+        print(io," DC ",qstr(p["value"]))
     elseif w.wave == :ac
-        print(io, " ac ")
-    end
-    for x in w.parameters
-        print(io,qstr(x[2]), " ")
-    end
-    if w.wave ∈ [:sin,:pwl,:pulse]
-        print(io,")")
+        print(io," AC ",qstr(p["value"]))
+    elseif w.wave == :sin
+        print(io,sin_string(p["offset"],p["amplitude"],p["frequency"],p["phase"]))
+    elseif w.wave == :pulse
+        print(io,pulse_string(;(Symbol(k)=>v for (k,v) in p)...))
+    elseif w.wave == :pwl
+        print(io," ",pwl_string(p))
+    elseif w.wave == :raw
+        print(io," ",p["text"])
     end
     return nothing
 end
@@ -341,28 +414,11 @@ Base.show(io::IO,::MIME"text/plain",w::Waveform) = report(io,w)
 
 function Base.print(io::IO,c::Component)
     if length(c.prefix)==1 && length(c.name)>0 && length(c.nodes)>0
-        regx = Regex("^$(c.prefix)\\w+","i")
-        if !isnothing(match(regx,c.name))
-            print(io,c.name," ")
-        else
-            print(io,c.prefix,c.name," ")
-        end
-        
-        for n in c.nodes
-            print(io,n," ")
-        end
-        
-        if !isnothing(c.value)
-            print(io,qstr(c.value)," ")
-        end
-        
-        if !isnothing(c.model)
-            print(io,c.model," ")
-        end
-
-        for p in c.parameters
-            print(io,p.name,"=",qstr(p.value)," ")
-        end
+        rest = String[]
+        isnothing(c.value) || push!(rest,qstr(c.value))
+        isnothing(c.model) || push!(rest,c.model)
+        append!(rest,string.(c.parameters))
+        print(io,spice_fields(with_prefix(c.prefix,c.name),c.nodes,rest...))
     else
         print(io,"* Empty or Invalid Component")
     end
@@ -388,39 +444,38 @@ end
 
 
 
+spice_prefix(::CCCS) = "F"
+spice_prefix(::CCVS) = "H"
+spice_prefix(::VCCS) = "G"
+spice_prefix(::VCVS) = "E"
+control_nodes(c::Union{CCCS,CCVS}) = [c.control]
+control_nodes(c::Union{VCCS,VCVS}) = c.control
+
 function Base.print(io::IO,c::DependentSource)
-    if typeof(c) == CCCS
-        print(io,dependent_source(:cccs;c.name,c.nplus,c.nminus,c.control,c.gain))
-    elseif typeof(c) == VCVS
-        print(io,dependent_source(:vcvs;c.name,c.nplus,c.nminus,c.control,c.gain))
-    elseif typeof(c) == VCCS
-        print(io,dependent_source(:vccs;c.name,c.nplus,c.nminus,c.control,c.gain))
-    elseif typeof(c) == CCVS
-        print(io,dependent_source(:ccvs;c.name,c.nplus,c.nminus,c.control,c.gain))
-    end
+    print(io,spice_fields(with_prefix(spice_prefix(c),c.name),
+                          [c.nplus,c.nminus,control_nodes(c)...],qstr(c.gain)))
 end
 
 function Base.print(io::IO,n::Netlist)
     println(io,"* ", n.title)
-    for field in [:models,:includes,:parameters,:sources,:components]
-        v = getfield(n,field)
-        for x in v
-            println(io,x)
-        end        
+    foreach(x->println(io,x), n.includes)
+    foreach(x->println(io,x), n.models)
+    for p in n.parameters
+        println(io, p isa Parameter ? param_line(p.name,p.value) : p)
     end
+    foreach(x->println(io,x), n.sources)
+    foreach(x->println(io,x), n.components)
     println(io,".end")
 end
 
 
-function Base.print(io::IO,s::Source)
-    print(io,s.name,"   ")
-    for n in s.nodes
-        print(io,n," ")
-    end
-    for w in s.waveforms
-        print(io,w)
-    end
+# DC and AC values first, then transient waveforms, as SPICE users expect
+const WAVEFORM_ORDER = Dict(:dc=>1, :ac=>2)
 
+function Base.print(io::IO,s::Source)
+    waves = sort(s.waveforms; by = w -> get(WAVEFORM_ORDER,w.wave,3))
+    print(io,spice_fields(with_prefix(s.prefix,s.name),s.nodes,
+                          (strip(sprint(print,w)) for w in waves)...))
 end
 
 
@@ -439,14 +494,14 @@ end
 
 
 function report(io::IO,s::Source)
-    println('-'^40)
+    println(io,'-'^40)
     print(io,s.species," ",s.name,"   ")
     println(io,"nplus=",s.nodes[1]," nminus=",s.nodes[2])
     println(io,"\nWaveforms:")
     for i in eachindex(s.waveforms)
         println(io,i,": ",s.waveforms[i]," ")
     end
-    println('.'^40)
+    println(io,'.'^40)
 end
 report(s::Source) = report(stdout,s)
 Base.show(io::IO,::MIME"text/plain",s::Source) = report(io,s)
@@ -457,7 +512,7 @@ function report(io::IO,c::Component)
     for i in c.nodes print(io,i," "); end
     if !isnothing(c.value) print(io, "value: ",c.value); end
     if !isnothing(c.model) print(io, "model: ",c.model); end
-    if length(c.parameters)>0 print(io," params: "); print.(io,parameters," "); end
+    if length(c.parameters)>0 print(io," params: "); print.(io,c.parameters," "); end
     println(io,"")
     return nothing
 end

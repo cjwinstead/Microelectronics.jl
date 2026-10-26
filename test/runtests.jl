@@ -87,7 +87,8 @@ tstr(s) = strip(replace(s,rgx))
 
     @test tstr(pwl_string(points)) == "PWL ( 0 0 1e-06 0 2e-06 1 1e-05 1)"
 
-    @test tstr(vdc(1,0,1u"V"))=="V1 0 1 V DC 0"
+    # vdc(name,nplus,nminus,value): a value in a node position is an error
+    @test_throws ArgumentError vdc(1,0,1u"V")
     @test tstr(vdc("VA","n1",0,5u"mV"))=="VA n1 0 DC 0.005"
     @test tstr(vdc("VA","n1",0,5u"mV";frequency=1u"krad/s",ac=1))=="VA n1 0 DC 0.005 AC 1 SIN (0,0.005,159.155,0)"
     @test tstr(vac("VIN",1,0))=="VIN 1 0 AC 1"
@@ -133,4 +134,77 @@ tstr(s) = strip(replace(s,rgx))
     end
     @test results[1] ≈ 500u"mV"
     @test results[2] ≈ 750u"mV"
+end
+
+@testset "String and object APIs agree" begin
+    same(a,b) = tstr(string(a)) == tstr(string(b))
+
+    @test same(resistor("R1",1,2,1u"kΩ"),  Resistor("R1",1,2,1u"kΩ"))
+    @test same(resistor(name="R1",nplus=1,nminus=2,value=:R), Resistor(name="R1",nplus=1,nminus=2,value=:R))
+    @test same(capacitor("C1",2,0,1u"nF"), Capacitor("C1",2,0,1u"nF"))
+    @test same(inductor("L1",2,0,1u"mH"),  Inductor("L1",2,0,1u"mH"))
+    @test same(diode("D1",1,2,"D1N914"),   Diode("D1",1,2,"D1N914"))
+    @test same(opamp(name="OA1",nplus=0,nminus=1,out=3,model="ideal_opamp"),
+               Opamp(name="OA1",nplus=0,nminus=1,out=3,model="ideal_opamp"))
+    @test same(vdc("V1",1,0,5u"V"),        Vdc("V1",1,0,5u"V"))
+    @test same(vdc("in",1,0,5u"V"),        Vdc("in",1,0,5u"V"))
+    @test same(vac("V1",1,0,1),            Vac("V1",1,0,1))
+    @test same(idc("I1",0,1,1u"mA"),       Idc("I1",0,1,1u"mA"))
+    @test same(vsin("V1",1,0),             Vsin("V1",1,0))
+    @test same(vsin("V1",1,0;amplitude=1u"V",frequency=1u"kHz",phase=90u"°"),
+               Vsin("V1",1,0;amplitude=1u"V",frequency=1u"kHz",phase=90u"°"))
+    @test same(vsin("V1",1,0;amplitude=1u"V",ac=1,dc=2u"V"),
+               Vsin("V1",1,0;amplitude=1u"V",ac=1,dc=2u"V"))
+    @test same(vpulse("V1",1,0;low=0u"V",high=5u"V",width=0.5u"ms"),
+               Vpulse("V1",1,0;low=0u"V",high=5u"V",width=0.5u"ms"))
+    @test same(vpwl("V1",1,0;points=[(0u"s",0u"V"),(1u"ms",1u"V")]),
+               Vpwl("V1",1,0,[Point(0u"s",0u"V"),Point(1u"ms",1u"V")]))
+    @test same(dependent_source(:vccs;name="G1",nplus=3,nminus=0,control=[1,2],gain=1u"mS"),
+               VCCS(name="G1",nplus="3",nminus="0",control=["1","2"],gain=1u"mS"))
+    @test same(mosfet("M1",3,2,0,0,"nmos"),
+               MOSFET("M1",3,2,0,0,"nmos",[Parameter(k,v) for (k,v) in
+                   ("W"=>20e-6,"L"=>10e-6,"AD"=>0.161e-8,"AS"=>0.603e-8,
+                    "PD"=>0.478e-6,"PS"=>0.478e-6,"NRD"=>0.3,"NRS"=>1)]))
+end
+
+@testset "Waveform formatting" begin
+    @test tstr(sin_string(0u"V",1u"V",1u"kHz",90u"°"))       == "SIN (0,1,1000,0,0,90)"
+    @test tstr(sin_string(0u"V",1u"V",1u"kHz",(π/2)u"rad"))  == "SIN (0,1,1000,0,0,90)"
+    @test tstr(sin_string(0u"V",1u"V",1u"kHz",:ph))          == "SIN (0,1,1000,0,0,{ph})"
+    @test startswith(tstr(string(Vpulse("V1",1,0;low=0u"V",high=5u"V"))), "V1 1 0 PULSE (0 5")
+    @test occursin("PWL ( 0 0 0.001 0.002)", string(Vpwl("V1",1,0,[(0,0),(1u"ms",2u"mV")])))
+    @test tstr(string(Waveform(:dc,1u"V"))) == "DC 1"
+end
+
+@testset "Netlists mix both styles" begin
+    n = Netlist(title="mixed", parameters=[Parameter("R",1u"kΩ")],
+                sources=[Vdc("V1",1,0,1u"V")],
+                components=[Resistor("R1",1,2,:R), resistor("R2",2,0,1u"kΩ")])
+    @test tstr(string(n)) == "* mixed .include $(model_library()) .param R=1000 V1 1 0 DC 1 R1 1 2 {R} R2 2 0 1000 .end"
+    load_netlist(n); simulate(:op)
+    @test node"2"[1] ≈ 500u"mV"
+
+    txt = build_netlist(; sources=[vdc("V1",1,0,1u"V")],
+                        components=[resistor("R1",1,2,1u"kΩ"), Resistor("R2",2,0,3u"kΩ")])
+    @test !occursin("Any[", txt)
+    simulate(:op)
+    @test node"2"[1] ≈ 750u"mV"
+end
+
+@testset "Sources simulate as specified" begin
+    sample(t) = (ts = ustrip.(u"s",tran_time()); v = real"1"; v[argmin(abs.(ts .- t))])
+    for src in (vsin("V1",1,0;amplitude=1u"V",frequency=1u"kHz",phase=90u"°"),
+                Vsin("V1",1,0;amplitude=1u"V",frequency=1u"kHz",phase=90u"°"))
+        build_netlist(; sources=[src], components=[resistor("RL",1,0,1u"kΩ")])
+        simulate(:tran; tstep=1u"μs", tmax=1u"ms")
+        @test sample(0.0)    ≈ 1.0 atol=0.01     # 90° phase: starts at the peak
+        @test sample(0.5e-3) ≈ -1.0 atol=0.01
+    end
+    for src in (vpulse("V1",1,0;low=0u"V",high=5u"V",width=0.5u"ms"),
+                Vpulse("V1",1,0;low=0u"V",high=5u"V",width=0.5u"ms"))
+        build_netlist(; sources=[src], components=[resistor("RL",1,0,1u"kΩ")])
+        simulate(:tran; tstep=1u"μs", tmax=1u"ms")
+        @test sample(0.25e-3) ≈ 5.0 atol=0.01   # high during the pulse
+        @test sample(0.75e-3) ≈ 0.0 atol=0.01   # low afterwards
+    end
 end

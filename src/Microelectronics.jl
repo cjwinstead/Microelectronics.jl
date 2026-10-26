@@ -656,25 +656,63 @@ end
 export qstr
 
 
+#=
+The functions below are the only place SPICE text for waveforms and
+parameters is written. Both the object API (`print` methods in Objects.jl)
+and the older string-returning functions call them, so the two APIs always
+produce the same netlist.
+=#
+
+"Default arguments for sinusoidal sources (shared by both APIs)."
+const SIN_DEFAULTS = (offset=0u"V", amplitude=5u"mV", frequency=1u"kHz", phase=0u"°")
+
+"Default arguments for pulse sources (shared by both APIs)."
+const PULSE_DEFAULTS = (low=0u"V", high=5u"V", delay=10u"ns", risetime=10u"ns",
+                        falltime=10u"ns", width=490u"ns", period=1u"ms", pulses="")
+
+# ngspice expects the SIN phase in degrees. Angle quantities are converted;
+# plain numbers are taken to be degrees; Symbols become {parameters}.
+phase_degrees(p::Quantity) = @sprintf("%g", ustrip(u"°", p))
+phase_degrees(p) = qstr(p)
+
 """
    sin_string(offset,amplitude,frequency,phase=0)
 
 Return a SPICE string representing a sinusoidal source. Can be
 appended to voltage or current sources.
+
+The `phase` is an angle: `90u"°"` and `(π/2)u"rad"` are equivalent, and a
+plain number is taken to be in degrees, as in ngspice. A nonzero phase is
+written to the PHASE field of ngspice's `SIN(VO VA FREQ TD THETA PHASE)`.
+
+# Examples
+
+```julia-repl
+julia> sin_string(0u"V", 1u"V", 1u"kHz")
+" SIN (0,1,1000,0) "
+
+julia> sin_string(0u"V", 1u"V", 1u"kHz", 90u"°")
+" SIN (0,1,1000,0,0,90) "
+```
 """
 function sin_string(offset,amplitude,frequency,phase=0)
-    return @sprintf(" SIN (%s,%s,%s,%s) ",qstr.((offset,amplitude,frequency,phase))...)
+    args = qstr.((offset,amplitude,frequency))
+    if phase isa Number && iszero(phase)
+        return @sprintf(" SIN (%s,%s,%s,0) ", args...)
+    else
+        return @sprintf(" SIN (%s,%s,%s,0,0,%s) ", args..., phase_degrees(phase))
+    end
 end
 export sin_string
 
 
 """
-   pwl_string(points::Vector{Tuple{Number,Number}})
+   pwl_string(points::Vector)
 
 Returns a SPICE-formatted string for a Piecewise Linear independent
 source using data provided in `points`. Each element of `points` is
-a Tuple indicating (time,value). The time and value can be Unitful
-Quantities or unitless numbers, in which case they are assumed to be
+a `Point` or a Tuple indicating (time,value). The time and value can be
+Unitful Quantities or unitless numbers, in which case they are assumed to be
 (s,V) or (s,A) depending on the source species. Generally speaking, the
 `points` should be ascending in time. It is not necessary to use the
 same units for each point.
@@ -686,17 +724,15 @@ julia> points=Vector{Tuple{Number,Number}}()
 julia> push!(points,(0,0))
 julia> push!(points,(1u"ms",2u"mV"))
 julia> pwl_string(points)
-"PWL ( 0 0 0.001 0.02)"
+"PWL ( 0 0 0.001 0.002)"
 ```
 """
-function pwl_string(points::Vector)
+function pwl_string(points::AbstractVector)
     s=IOBuffer()
     print(s,"PWL (")
     for p in points
-        print(s," ")
-        print(s,qstr(p[1]))
-        print(s," ")
-        print(s,qstr(p[2]))
+        t, v = p isa Point ? (p.time, p.value) : (p[1], p[2])
+        print(s," ",qstr(t)," ",qstr(v))
     end
     print(s,")")
     return String(take!(s))
@@ -705,19 +741,20 @@ export pwl_string
 
 
 """
-   pulse_string(;high=5u"V",low=0u"V",period=1u"ms",width=490u"ns",risetime=10u"ns",falltime=10u"ns",delay=10u"ns",pulses="")
+   pulse_string(;low=0u"V",high=5u"V",delay=10u"ns",risetime=10u"ns",falltime=10u"ns",width=490u"ns",period=1u"ms",pulses="")
 
 Returns a SPICE-formatted string for a PULSE independent source. The
 `low` parameter is the initial value, and `high` is the "pulsed" value.
-
+Unspecified arguments take the values in `PULSE_DEFAULTS`; other keyword
+arguments are ignored. `pulses` limits the number of pulses (blank means
+unlimited).
 """
-function pulse_string(;high=5u"V",low=0u"V",period=1u"ms",width=490u"ns",risetime=10u"ns",falltime=10u"ns",delay=10u"ns",pulses="",args...)
+function pulse_string(;args...)
+    p = merge(PULSE_DEFAULTS, (k=>v for (k,v) in pairs(args) if haskey(PULSE_DEFAULTS,k)))
+    pulses = isnothing(p.pulses) ? "" : p.pulses
     @sprintf(" PULSE (%s %s %s %s %s %s %s %s )",
-             qstr.(
-                 (low,high,delay,risetime,falltime,
-                  width,period,pulses)
-                      )...
-             )
+             qstr.((p.low, p.high, p.delay, p.risetime, p.falltime,
+                    p.width, p.period, pulses))...)
 end
 export pulse_string
 
@@ -748,6 +785,7 @@ end
 
 """
 spice_parameters(p::OrderedDict,[keys...])
+spice_parameters(v::Vector{Parameter})
 
 Return a String of SPICE parameter declarations using entries
 in dictionary `p`. If additional arguments are specified,
@@ -769,16 +807,15 @@ julia> spice_parameters(d,"a")
 
 ```
 """
-function spice_parameters(p::OrderedDict,vars...)
-    ostr = ""
-    for var in vars
-        val = p[var]            
-        ostr *= @sprintf(".param %5s=%s\n",var,qstr(val))
-    end
-    return ostr
+# One `.param` line; used by spice_parameters and by Netlist printing.
+param_line(name,value) = @sprintf(".param %5s=%s",name,qstr(value))
+
+function spice_parameters(p::AbstractDict,vars...)
+    join(param_line(var,p[var])*"\n" for var in vars)
 end
 
-spice_parameters(p::OrderedDict) = spice_parameters(p,Tuple(keys(p))...)
+spice_parameters(p::AbstractDict) = spice_parameters(p,Tuple(keys(p))...)
+spice_parameters(v::AbstractVector{Parameter}) = join(param_line(x.name,x.value)*"\n" for x in v)
 export spice_parameters
 
 
@@ -807,8 +844,7 @@ julia> bipole(:C, 2, 3, 1u"nF")
 ```
 """
 function bipole(species,nplus,nminus,value)
-    @sprintf("%-5s %-5s %-5s %s",
-        nextname(uppercase(string(species))),nplus,nminus,qstr(value))
+    bipole(species,nothing,nplus,nminus,value)
 end
 export bipole
 
@@ -836,40 +872,32 @@ julia> bipole(:C, 1, 2, 3, 1u"nF")
 ```
 """
 function bipole(species,name,nplus,nminus,value)
-    dt = uppercase(string(species))
-    nm = string(name)
-    
-    if uppercase(string(name[1])) == dt
-        nm = name
-    else
-        nm = dt*nm
-    end
-    @sprintf("%-5s %-5s %-5s %s",
-        nm,nplus,nminus,qstr(value))
+    p = uppercase(string(species))
+    string(Component(;name,prefix=p,species=get(device_species,p,""),
+                     nodes=(nplus,nminus),value))
 end
 
 
 function subckt_instance(;name,terminals,model)
-    if typeof(terminals)==String
-        s = @sprintf("X%-5s %s %s\n",name,terminals,model)
-    elseif typeof(terminals)<:Union{AbstractArray,Tuple}
-        s = @sprintf("X%-5s",name)
-        for t in terminals
-            s = @sprintf("%s %-5s",s,t)
-        end
-        s = @sprintf("%s %s\n",s,model)
-    end
-    return s
+    nodes = terminals isa AbstractString ? split(terminals) : collect(terminals)
+    string(Subckt(name,nodes,string(model)))
 end
 export subckt_instance
 
 
-function mosfet(name,drain,gate,source,substrate,model=ald1105n;
+"""
+   mosfet(name,drain,gate,source,substrate,model="ald1105n"; W, L, AD, AS, PD, PS, NRD, NRS)
+
+Return a SPICE line for a MOSFET. The geometry keywords default to values
+for the ALD1105 parts in the model library. Equivalent to
+`string(MOSFET(...))` with those geometry parameters.
+"""
+function mosfet(name,drain,gate,source,substrate,model="ald1105n";
                 L=10e-6,W=20e-6,AS=0.603e-8,PS=0.478e-6,
                 AD=0.161e-8,PD=0.478e-6,NRD=0.3,NRS=1
                 )
-    s = @sprintf("M%-5s %-5s %-5s %-5s %-5s %s W=%s L=%s AD=%s AS=%s PD=%s PS=%s NRD=%s NRS=%s",name,drain,gate,source,substrate,model,qstr.((W,L,AD,AS,PD,PS,NRD,NRS))...)
-    return s
+    geometry = [Parameter(string(k),v) for (k,v) in pairs((;W,L,AD,AS,PD,PS,NRD,NRS))]
+    string(MOSFET(name,drain,gate,source,substrate,model,geometry))
 end
 export mosfet
 
@@ -911,53 +939,43 @@ end
 #====== Build and Load Netlists ===========#
 
 """
-   build_netlist(s="";title="circuit",parameters="",models="",includes="",sources="",components="")
+   build_netlist([title]; title="circuit", parameters, models, sources, components)
 
-Constructs and loads a SPICE netlist with this format:
+Construct a `Netlist`, load it into ngspice, and return its text:
 
 ```
 * <title>
+.include <model library>
 <models>
 <parameters>
 <sources>
 <components>
-<s>
 .end
 ```
 
-The positional argument `s` can be any SPICE-compatible text. The kwargs
-can be String or Vector{String} types, usually generated by
-other functions in the Microelectronics package. All args and
-kwargs are optional; if none are given, then an empty netlist
-is loaded.
+The title can be given positionally, `build_netlist("My circuit"; ...)`, or
+as the `title` keyword. The other keywords accept element objects
+(`Resistor`, `Vsin`, ...), Strings from the string-returning functions
+(`resistor`, `vsin`, ...), raw SPICE text, `@table` dictionaries (for
+parameters), or vectors mixing any of these. All arguments are optional.
 
 # Example
 
 ```julia-repl
-julia> title="Example Circuit";
 julia> sources=[vdc("V1",1,0,1u"V")];
-julia> components=[resistor("R1",1,0,1u"kΩ")];
-julia> build_netlist(;title,sources,components)
-Note: No compatibility mode selected!
-Circuit: * example circuit
+julia> components=[resistor("R1",1,2,1u"kΩ"), Resistor("R2",2,0,1u"kΩ")];
+julia> print(build_netlist("Example Circuit";sources,components))
 * Example Circuit
-
-V1    1     0      DC 1
-
-R1    1     0     1000
-
+.include .../model_library.sp
+V1    1     0     DC 1
+R1    1     2     1000
+R2    2     0     1000
 .end
 ```
 """
-function build_netlist(s="";title="circuit",parameters="",models="",sources="",components="")
-    io = IOBuffer()
-    println(io,"* ",title)
-    println(io,".include ",model_library())
-    for x in [parameters,models,sources,components]
-        println(io,x)
-    end
-    println(io,".end")
-    netlist=String(take!(seekstart(io)))
+function build_netlist(s=nothing;title=something(s,"circuit"),parameters="",models="",sources="",components="")
+    n = Netlist(;title,parameters,models,sources,components)
+    netlist = string(n)
     load_netlist(netlist)
     netlist
 end
@@ -1009,7 +1027,7 @@ XOA1   0     2     3     my_opamp
 ```
 """
 function opamp(;name,nplus,nminus,out,model="ideal_opamp")
-    subckt_instance(;name,terminals=(nplus,nminus,out),model)
+    string(Opamp(name,nplus,nminus,out,string(model)))
 end
 export opamp
 
@@ -1053,70 +1071,45 @@ species.
 If no keyword arguments are given, a zero-value source is instantiated.
 """
 function independent_source(species;args...)
-
-    io = IOBuffer()
-    
+    hasall(args,[:nplus,:nminus]) ||
+        throw(ArgumentError("an independent source needs `nplus` and `nminus` nodes"))
+    p = uppercase(string(species))
+    waveforms = Waveform[]
     if hasany(args,[:dc,:dctype])
-        if haskey(args,:dc)
-            print(io," DC $(qstr(args[:dc]))")
-        else
-            print(io," DC 0")
-        end
+        push!(waveforms,Waveform(:dc,get(args,:dc,0)))
     end
     if haskey(args,:ac)
-        print(io," AC $(args[:ac])")
+        push!(waveforms,Waveform(:ac,args[:ac]))
     end
     if hasany(args,[:sintype,:offset,:frequency,:amplitude,:phase])
-        sinargs=(;)
-        for k in [(:offset,0),(:amplitude,.005),(:frequency,1000),(:phase,0)]
-            if haskey(args,k[1])                
-                sinargs=merge(sinargs,[k[1]=>args[k[1]]])
-            else
-                sinargs=merge(sinargs,[k[1]=>k[2]])
-            end
-        end
-        print(io,sin_string(sinargs...))
+        push!(waveforms,Waveform(:sin;args...))
     elseif haskey(args,:points)
-        print(io,pwl_string(args[:points]))
+        push!(waveforms,Waveform(:pwl,args[:points]))
     elseif hasany(args,[:high,:low,:period,:width,:risetime,:falltime])
-        print(io,pulse_string(;args...))
+        push!(waveforms,Waveform(:pulse;args...))
     end
     if haskey(args,:value)
-        print(io,args[:value])
+        push!(waveforms,Waveform(:raw,args[:value]))
     end
-    val = String(take!(seekstart(io)))
-    if hasall(args,[:nplus,:nminus])
-        if haskey(args,:name)
-            return bipole(species,args[:name],args[:nplus],args[:nminus],val)
-        else
-            return bipole(species,args[:nplus],args[:nminus],val)
-        end
-    end    
+    string(Source(;species=lowercase(p)*"source",prefix=p,name=get(args,:name,nothing),
+                  nplus=args[:nplus],nminus=args[:nminus],waveforms))
 end
 export independent_source
 
 
+"""
+   dependent_source(kind::Symbol; name, nplus, nminus, control, gain=1)
+
+Return a SPICE line for a controlled source. `kind` is `:vcvs`, `:vccs`,
+`:ccvs` or `:cccs`. For voltage-controlled sources `control` is a pair of
+nodes; for current-controlled sources it names the voltage source whose
+current is sensed. Equivalent to `string(VCVS(...))` etc.
+"""
 function dependent_source(s::Symbol;name,nplus,nminus,control,gain=1)
-    dependent_source(Val(s);name,nplus,nminus,control,gain)
-end
-
-
-# Prepend the SPICE prefix letter `p` unless `name` already starts with it.
-with_prefix(p,name) = (n = string(name); uppercase(first(n,1)) == p ? n : p*n)
-
-function dependent_source(::Val{:cccs};name,nplus,nminus,control,gain)
-    "$(with_prefix("F",name)) $nplus $nminus $control $(qstr(gain))\n"
-end
-function dependent_source(::Val{:ccvs};name,nplus,nminus,control,gain)
-    "$(with_prefix("H",name)) $nplus $nminus $control $(qstr(gain))\n"
-end
-
-function dependent_source(::Val{:vccs};name,nplus,nminus,control,gain)
-    "$(with_prefix("G",name)) $nplus $nminus $(control[1]) $(control[2]) $(qstr(gain))\n"
-end
-
-function dependent_source(::Val{:vcvs};name,nplus,nminus,control,gain)
-    "$(with_prefix("E",name)) $nplus $nminus $(control[1]) $(control[2]) $(qstr(gain))\n"
+    T = Dict(:cccs=>CCCS, :ccvs=>CCVS, :vccs=>VCCS, :vcvs=>VCVS)[s]
+    ctrl = T <: Union{VCCS,VCVS} ? node_names(control) : node_name(control)
+    string(T(;name=string(name),nplus=node_name(nplus),nminus=node_name(nminus),
+             control=ctrl,gain))
 end
 export dependent_source
 
