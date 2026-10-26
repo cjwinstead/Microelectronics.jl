@@ -759,13 +759,13 @@ then lines are output only for the specified keys.
 julia> d = @table a=1u"V"  b=4u"ms";
 
 julia> spice_parameters(d)
-.param     a=1.0000e+00
-.param     b=4.0000e-03
+.param     a=1
+.param     b=0.004
 
 
 
 julia> spice_parameters(d,"a")
-.param     a=1.0000e+00
+.param     a=1
 
 ```
 """
@@ -851,7 +851,7 @@ end
 
 function subckt_instance(;name,terminals,model)
     if typeof(terminals)==String
-        s = @sprintf("X%-5s %-5s %-5s %-5s %s\n",name,terminals,model)
+        s = @sprintf("X%-5s %s %s\n",name,terminals,model)
     elseif typeof(terminals)<:Union{AbstractArray,Tuple}
         s = @sprintf("X%-5s",name)
         for t in terminals
@@ -952,8 +952,7 @@ R1    1     0     1000
 function build_netlist(s="";title="circuit",parameters="",models="",sources="",components="")
     io = IOBuffer()
     println(io,"* ",title)
-    mp=realpath(dirname(pathof(@__MODULE__))*"/..")
-    println(io,".include $mp/model_library.sp")
+    println(io,".include ",model_library())
     for x in [parameters,models,sources,components]
         println(io,x)
     end
@@ -1102,19 +1101,22 @@ function dependent_source(s::Symbol;name,nplus,nminus,control,gain=1)
 end
 
 
+# Prepend the SPICE prefix letter `p` unless `name` already starts with it.
+with_prefix(p,name) = (n = string(name); uppercase(first(n,1)) == p ? n : p*n)
+
 function dependent_source(::Val{:cccs};name,nplus,nminus,control,gain)
-    "F$name $nplus $nminus $control $(qstr(gain))\n"
+    "$(with_prefix("F",name)) $nplus $nminus $control $(qstr(gain))\n"
 end
 function dependent_source(::Val{:ccvs};name,nplus,nminus,control,gain)
-    "H$name $nplus $nminus $control $(qstr(gain))\n"
+    "$(with_prefix("H",name)) $nplus $nminus $control $(qstr(gain))\n"
 end
 
 function dependent_source(::Val{:vccs};name,nplus,nminus,control,gain)
-    "G$name $nplus $nminus $(control[1]) $(control[2]) $(qstr(gain))\n"
+    "$(with_prefix("G",name)) $nplus $nminus $(control[1]) $(control[2]) $(qstr(gain))\n"
 end
 
 function dependent_source(::Val{:vcvs};name,nplus,nminus,control,gain)
-    "E$name $nplus $nminus $(control[1]) $(control[2]) $(qstr(gain))\n"
+    "$(with_prefix("E",name)) $nplus $nminus $(control[1]) $(control[2]) $(qstr(gain))\n"
 end
 export dependent_source
 
