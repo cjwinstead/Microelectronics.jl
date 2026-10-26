@@ -215,18 +215,18 @@ end
 function Spectrum(node::String,fundamental::Quantity;N=20,D=50)
     spectrum = fft(node;frequency=fundamental)
     spectrum = distortion(spectrum)
-    println("completed fft and distortion analysis")
+    #println("completed fft and distortion analysis")
     f     = spectrum.f .* u"Hz"
     mag  = spectrum.mag .* u"V"
-    println("added units to frequency and magnitude vectors")
+    #println("added units to frequency and magnitude vectors")
     db   = spectrum.db .* u"dB"
-    println("added units to db vector")
+    #println("added units to db vector")
     phase = spectrum.phase .* u"rad"
-    println("added units to phase vector")
+    #println("added units to phase vector")
     thd   = spectrum.thd
 
     harmonics  = [ (h[1]*u"V",h[2]*u"rad") for h in spectrum.harmonics]
-    println("added units to harmonics vector")
+    #println("added units to harmonics vector")
     
     Spectrum(fundamental,
              f,mag,phase,db,
