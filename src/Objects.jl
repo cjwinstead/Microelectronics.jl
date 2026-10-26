@@ -31,7 +31,7 @@ struct Spectrum
     f::Vector{Quantity}
     mag::Vector{Quantity}
     phase::Vector{Quantity}
-    db::Vector{Gain}  
+    db::Vector{}  
     harmonics::Vector{Tuple{Quantity,Quantity}}
     thd::Float64
 end
@@ -44,7 +44,7 @@ abstract type DependentSource <: Element end
     nplus::String
     nminus::String
     control::String
-    gain::Union{Float64,String,Symbol}
+    gain::Union{Number,Quantity,String,Symbol}
 end
 
 @kwdef struct VCCS <: DependentSource
@@ -52,7 +52,7 @@ end
     nplus::String
     nminus::String
     control::Vector{String}
-    gain::Union{Float64,String,Symbol}
+    gain::Union{Number,Quantity,String,Symbol}
 end
 
 @kwdef struct CCVS <: DependentSource
@@ -60,7 +60,7 @@ end
     nplus::String
     nminus::String
     control::String
-    gain::Union{Float64,String,Symbol}
+    gain::Union{Number,Quantity,String,Symbol}
 end
 
 @kwdef struct VCVS <: DependentSource
@@ -68,7 +68,7 @@ end
     nplus::String
     nminus::String
     control::Vector{String}
-    gain::Union{Float64,String,Symbol}
+    gain::Union{Number,Quantity,String,Symbol}
 end
 
 mutable struct Source <: Element
@@ -215,18 +215,18 @@ end
 function Spectrum(node::String,fundamental::Quantity;N=20,D=50)
     spectrum = fft(node;frequency=fundamental)
     spectrum = distortion(spectrum)
-    println("completed fft and distortion analysis")
+    #println("completed fft and distortion analysis")
     f     = spectrum.f .* u"Hz"
     mag  = spectrum.mag .* u"V"
-    println("added units to frequency and magnitude vectors")
+    #println("added units to frequency and magnitude vectors")
     db   = spectrum.db .* u"dB"
-    println("added units to db vector")
+    #println("added units to db vector")
     phase = spectrum.phase .* u"rad"
-    println("added units to phase vector")
+    #println("added units to phase vector")
     thd   = spectrum.thd
 
     harmonics  = [ (h[1]*u"V",h[2]*u"rad") for h in spectrum.harmonics]
-    println("added units to harmonics vector")
+    #println("added units to harmonics vector")
     
     Spectrum(fundamental,
              f,mag,phase,db,
