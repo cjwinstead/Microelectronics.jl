@@ -448,7 +448,9 @@ spice_prefix(::CCCS) = "F"
 spice_prefix(::CCVS) = "H"
 spice_prefix(::VCCS) = "G"
 spice_prefix(::VCVS) = "E"
-control_nodes(c::Union{CCCS,CCVS}) = [c.control]
+# The controlling current is sensed in a voltage source, so its name gets
+# the "V" prefix the same way Vdc("sense",...) becomes Vsense.
+control_nodes(c::Union{CCCS,CCVS}) = [with_prefix("V",c.control)]
 control_nodes(c::Union{VCCS,VCVS}) = c.control
 
 function Base.print(io::IO,c::DependentSource)

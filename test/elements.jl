@@ -65,6 +65,9 @@
         @test tstr(CCCS(name="F1",nplus="2",nminus="0",control="Vsense",gain=50)) == "F1 2 0 Vsense 50"
         @test tstr(CCVS(name="H1",nplus="2",nminus="0",control="Vsense",gain=1u"kΩ")) == "H1 2 0 Vsense 1000"
         @test tstr(CCVS(name="out",nplus="2",nminus="0",control="Vs",gain=1)) == "Hout 2 0 Vs 1"
+        # the sensing source gets the V prefix, like Vdc("sense",...) → Vsense
+        @test tstr(CCCS(name="F1",nplus="2",nminus="0",control="sense",gain=1)) == "F1 2 0 Vsense 1"
+        @test tstr(CCCS(name="F1",nplus="2",nminus="0",control="vsense",gain=1)) == "F1 2 0 vsense 1"
         @test VCVS(name="E1",nplus="3",nminus="0",control=["1","2"],gain=1) isa Microelectronics.DependentSource
     end
 

@@ -26,14 +26,22 @@
                                     components=[Resistor("RL",1,0,1u"kΩ")]))
         @test plot(quietly(() -> Spectrum("1", 1u"kHz"))) isa PlotType
 
-        # Known bugs: names are matched case-sensitively against ngspice's
-        # lowercase vector names, and misuse fails with internal errors.
+        # names in any case; clear errors for unknown names and wrong analyses
         simulate_circuit(:ac; start=1u"Hz", stop=1u"kHz", steps=5,
                          sources=[Vac("V1",1,0)], components=[Resistor("R1",1,0,1u"kΩ")])
-        @test_broken !throws(Exception, () -> bode("1","V1"))
-        @test_broken throws(ArgumentError, () -> plot("no_such_node"))
+        @test analysis_kind() == :ac
+        @test bode("1","V1") isa PlotType
+        @test_throws ArgumentError plot("1","V1")          # AC results: use bode
+        @test_throws ArgumentError plot("no_such_node")
+        @test_throws ArgumentError bode("no_such_node")
         simulate_circuit(:op; sources=[Vdc("V1",1,0,1u"V")], components=[Resistor("R1",1,0,1u"kΩ")])
-        @test_broken throws(ArgumentError, () -> bode(1))  # not an AC analysis
+        @test analysis_kind() == :op
+        @test_throws ArgumentError bode(1)                 # not an AC analysis
+        @test_throws ArgumentError plot(1)                 # nothing to plot against
+        @test_throws ArgumentError measure(:Av; in="1", out="1")
+        @test_throws ArgumentError measure(:cutoff; name="1")
+        msg = sprint(showerror, try bode(1) catch e; e end)
+        @test occursin(":ac", msg) && occursin(":op", msg) # says what's needed and what ran
     end
 
     @testset "Reports and display" begin

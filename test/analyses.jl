@@ -36,12 +36,20 @@
         @test dc_sweep() ≈ [0.0, 1e-3, 2e-3]u"A"          # sweeping a current source
         @test volts("1") ≈ [0.0, 1.0, 2.0]
 
-        # Known bug: ngspice only finds the swept device by its lowercase name,
-        # so device="V1" (as written in the netlist) silently runs nothing and
-        # the accessors then read the previous analysis.
+        # the swept device can be named as in the netlist, in any case
         simulate_circuit(:op; divider...)
         simulate_circuit(:dc; device="V1", start=0, stop=2, step=1, divider...)
-        @test_broken dc_sweep() == [0,1,2]u"V"
+        @test dc_sweep() == [0,1,2]u"V"
+        simulate_circuit(:dc; device="R2", start=1e3, stop=3e3, step=2e3, divider...)
+        @test volts("2") ≈ [0.5, 0.75]                    # sweeping a resistor
+    end
+
+    @testset "Failed analyses are reported" begin
+        simulate_circuit(:op; divider...)
+        # no device VX: ngspice runs nothing, and simulate must not return quietly
+        @test_throws ErrorException simulate_circuit(:dc; device="VX", start=0, stop=1, step=1, divider...)
+        @test analysis_kind() == :op                       # the old results are still there
+        @test_throws ErrorException quietly(() -> simulate(:tran; tstep=1u"ms", tmax=-1u"ms"))
     end
 
     @testset "AC analysis of an RC low-pass filter" begin
@@ -189,6 +197,41 @@
                          components=[Diode("D1",1,2,"D1N914"), Resistor("RL",2,0,1u"kΩ")])
         @test minimum(volts("2")) > -0.01
         @test maximum(volts("2")) > 3.5
+    end
+
+    @testset "Names are not case sensitive" begin
+        sources = [Vsin("VIN","IN",0;amplitude=1u"V",frequency=1u"kHz",dc=1u"V",ac=1),
+                   Vdc("Vsense","MID",0,0u"V")]
+        components = [Resistor("R1","IN","OUT",1u"kΩ"), Resistor("R2","OUT","MID",1u"kΩ"),
+                      Capacitor("C1","OUT",0,1u"μF"),
+                      CCCS(name="F1",nplus="0",nminus="FOUT",control="VSENSE",gain=10),
+                      Resistor("RF","FOUT",0,1u"kΩ")]
+        simulate_circuit(:op; sources, components)
+        for n in ("OUT","out","Out")
+            @test volts(n) ≈ [0.5]
+            @test Microelectronics.find_vec(n) == "out"
+        end
+        @test i"VIN" ≈ i"vin" ≈ [-0.5e-3]
+        @test Microelectronics.find_vec("VIN") == "vin#branch"
+        @test volts("FOUT") ≈ [5.0]                        # CCCS control "VSENSE" finds Vsense
+        @test isvoltage("OUT") && !iscurrent("OUT")
+        @test iscurrent("VIN") && !isvoltage("VIN")
+        @test_throws ArgumentError Microelectronics.find_vec("nowhere")
+        msg = sprint(showerror, try Microelectronics.find_vec("nowhere") catch e; e end)
+        @test occursin("out", msg) && occursin("vin#branch", msg)   # lists what exists
+
+        simulate_circuit(:dc; device="VIN", start=0, stop=2, step=1, sources, components)
+        @test dc_sweep() == [0,1,2]u"V"
+        @test volts("OUT") ≈ [0, 0.5, 1]
+
+        simulate_circuit(:ac; start=10u"Hz", stop=10u"kHz", steps=5, sources, components)
+        @test measure(:cutoff; name="OUT") ≈ measure(:cutoff; name="out")
+        @test magnitudes("OUT") ≈ magnitudes("out")
+
+        simulate_circuit(:tran; tstep=10u"μs", tmax=2u"ms", sources, components)
+        @test measure(:Av; in="IN", out="OUT") ≈ measure(:Av; in="in", out="out")
+        @test measure(:Gm; in="IN", out="VIN") ≈ measure(:Gm; in="in", out="vin")
+        @test measure(:slew; node="IN") ≈ measure(:slew; node="in")
     end
 
     @testset "String macros read fresh results" begin

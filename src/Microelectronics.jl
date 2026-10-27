@@ -186,14 +186,20 @@ function model_library()
 end
 export parallel, scale_radps, scale_quantity, scale_resistor, scale_Hz, scale_capacitor, model_library, scale_s
 
+"Hide ngspice's messages (the default in notebooks)."
 function be_quiet()
     NgHerb.be_quiet()
+end
+
+"Show ngspice's messages, e.g. to see why an analysis failed."
+function be_verbose()
+    NgHerb.be_verbose()
 end
 
 function dumpbuffer()
     NgHerb.dumpbuffer()
 end
-export be_quiet,dumpbuffer
+export be_quiet,be_verbose,dumpbuffer
 
 function (=>)(x::Quantity,s::Unitful.FreeUnits)
     uconvert(s,x)
@@ -1192,8 +1198,46 @@ julia> simulate(:ac; start=10u"kHz",stop=1u"MHz",steps=10)
 ```
 """
 function simulate(s::Symbol;args...)
+    before = latest_plot()
     simulate(Val(s);args...)
-    #NgHerb.dumpbuffer()
+    if latest_plot() == before
+        error("ngspice did not complete the :$s analysis, so the results still come ",
+              "from the previous analysis. Check the netlist and any names given ",
+              "(such as the swept device). Run be_verbose() to see ngspice's messages.")
+    end
+    return nothing
+end
+
+#=
+ngspice converts names in the netlist to lowercase, and its commands only
+recognize the lowercase forms. Names given by the user (nodes, sources,
+swept devices) are therefore lowercased before being sent in a command,
+and matched against result vectors without regard to case.
+=#
+spice_name(x) = lowercase(string(x))
+
+# Name of the latest result set ("op1", "tran2", ...), or nothing if none yet.
+latest_plot() = try NgHerb.curplot() catch; nothing end
+
+"""
+   analysis_kind()
+
+Return the kind of the latest analysis as a Symbol: `:op`, `:dc`, `:ac`,
+`:tran`, `:spec` (after `fft`), or `:none` if nothing has been simulated.
+"""
+function analysis_kind()
+    pl = latest_plot()
+    isnothing(pl) ? :none : Symbol(replace(pl, r"\d+$" => ""))
+end
+export analysis_kind
+
+# Throw a helpful error unless the latest analysis is of the given kind.
+function require_analysis(kinds, what)
+    k = analysis_kind()
+    k in kinds && return nothing
+    want = join(string.(":", kinds), " or ")
+    throw(ArgumentError("$what needs results from a $want analysis, but the latest " *
+                        "analysis is :$k. Run simulate(:$(first(kinds)); ...) first."))
 end
 
 
@@ -1224,7 +1268,7 @@ export transient
 
 
 function dc(;device,start,stop,step)
-    s="dc $device $(qstr(start)) $(qstr(stop)) $(qstr(step))"
+    s="dc $(spice_name(device)) $(qstr(start)) $(qstr(stop)) $(qstr(step))"
     NgHerb.cmd(s)
 end
 export dc
@@ -1257,7 +1301,7 @@ function fft(node::String; frequency=1u"kHz", N=20, D=50)
     tmax  = N*T
     simulate(:tran;tstep,tmax)
     NgHerb.cmd("linearize")
-    NgHerb.cmd("fft v($node)")
+    NgHerb.cmd("fft v($(spice_name(node)))")
     f = NgHerb.getrealvec("frequency")
     phase = NgHerb.getphasevec(node)
     mag = NgHerb.getmagnitudevec(node)
@@ -1438,37 +1482,34 @@ export nodes
 
 
 
-function find_vec(s::String)
+"""
+   find_vec(name)
+
+Return the name of the result vector for a node voltage or a source
+current in the latest analysis. `name` is a node name (`"out"`, `2`) or the
+name of a voltage source, whose current is the vector `"<name>#branch"`.
+Case doesn't matter. Throws an `ArgumentError` listing the available names
+if there is no match.
+"""
+function find_vec(s)
+    name = spice_name(s)
     vecs = NgHerb.listcurvecs()
-    for x in (string(s),string("V(",s,")"),string(s,"#branch"))
-        if x ∈ vecs
-            return x
-        end
+    for candidate in (name, "v($name)", "$name#branch")
+        i = findfirst(v -> lowercase(v) == candidate, vecs)
+        isnothing(i) || return vecs[i]
     end
+    shown = sort(filter(v -> !occursin(r"^(time|frequency)$|-sweep$", lowercase(v)), vecs))
+    throw(ArgumentError("there is no node or source named \"$s\" in the latest analysis " *
+                        "(:$(analysis_kind())). Available: $(join(shown, ", "))"))
 end
 
+find_vecs(args...) = [find_vec(s) for s in args]
 
-function find_vecs(args...)
-    [find_vec(string(s)) for s in args]
-end
+"True if `name` is a node voltage in the latest analysis."
+isvoltage(name::AbstractString) = NgHerb.getvec(find_vec(name))[2] == "voltage"
 
-function isvoltage(name::String)
-    v = NgHerb.getvec(name)
-    if v[2] == voltage
-        return true
-    else
-        return false
-    end    
-end
-
-function iscurrent(name::String)
-    v = NgHerb.getvec(name)
-    if v[2] == voltage
-        return true
-    else
-        return false
-    end
-end
+"True if `name` is a source current in the latest analysis."
+iscurrent(name::AbstractString) = NgHerb.getvec(find_vec(name))[2] == "current"
 
 
 """
@@ -1556,25 +1597,16 @@ export phases
 
 
 function simx()
-    pl=NgHerb.curplot()
-    if occursin("tran",pl)
-        return tran_time()
-    elseif occursin("dc",pl)
-        return dc_sweep()
-    elseif occursin("ac",pl)
-        return ac_freq()
-    end
+    require_analysis((:tran,:dc,:ac), "plotting")
+    k = analysis_kind()
+    k == :tran ? tran_time() : k == :dc ? dc_sweep() : ac_freq()
 end
 
 function simxlabel()
-    pl=NgHerb.curplot()
-    if occursin("tran",pl)
-        return "Time [$(unit(tran_time()[1]))]"
-    elseif occursin("dc",pl)
-        return "Sweep [$(unit(dc_sweep())[1])]"
-    elseif occursin("ac",pl)
-        return "Frequency [Hz]"
-    end
+    require_analysis((:tran,:dc,:ac), "plotting")
+    k = analysis_kind()
+    k == :tran ? "Time [$(unit(tran_time()[1]))]" :
+    k == :dc   ? "Sweep [$(unit(dc_sweep()[1]))]" : "Frequency [Hz]"
 end
 
 
@@ -1612,49 +1644,32 @@ julia> plot([dB"1",dB"2"];xscale=:log10,labels=["v1" "v2"])
 
 ```
         """
-function plot(names::Union{String,Number}...;args...)
-    vecs = find_vecs(names...)
-    if !isnothing(vecs)
-        labels=replace.(vecs,r"(.*)#branch"=>s"I(\1)")
-        labels=reshape(labels,(1,length(labels)))
-
-        data = NgHerb.getvec.(vecs)
-        vsigs = [y[3] for y in data if y[2]=="voltage"]
-        isigs = [y[3] for y in data if y[2]=="current"]
-        vlabels = [y[1] for y in data if y[2]=="voltage"]
-        ilabels = [replace(y[1],r"(.*)#branch"=>s"I(\1)") for y in data if y[2]=="current"]
-        vlabels=reshape(vlabels,(1,length(vlabels)))
-        ilabels=reshape(ilabels,(1,length(ilabels)))
-        
-        if length(vsigs)>0 && length(isigs)>0
-            p=plot(simx(),vsigs; labels=vlabels,ylabel="V",args...)
-            
-            tw = twinx(p)
-            plot!(tw,simx(),isigs; labels=ilabels,ylabel="A",linestyle=:dash,args...)
-        elseif length(vsigs)>0
-            p=plot(simx(),vsigs; labels=vlabels,ylabel="V",args...)
-        elseif length(isigs)>0
-            p=plot(simx(),isigs; labels=ilabels,ylabel="A",args...)
-        else
-            return nothing
-        end
+function plot(names::Union{AbstractString,Number}...;args...)
+    analysis_kind() == :ac && throw(ArgumentError(
+        "AC results are complex; use bode($(join(repr.(names), ", "))) to plot magnitude and phase"))
+    vecs  = find_vecs(names...)              # throws if a name isn't found
+    data  = NgHerb.getvec.(vecs)
+    label(n) = replace(n, r"(.*)#branch" => s"I(\1)")
+    vsigs   = [y[3] for y in data if y[2]=="voltage"]
+    isigs   = [y[3] for y in data if y[2]=="current"]
+    vlabels = permutedims([label(y[1]) for y in data if y[2]=="voltage"])
+    ilabels = permutedims([label(y[1]) for y in data if y[2]=="current"])
+    x = simx()
+    if !isempty(vsigs) && !isempty(isigs)
+        p = Plots.plot(x,vsigs; labels=vlabels,ylabel="V",xlabel=simxlabel(),args...)
+        Plots.plot!(twinx(p),x,isigs; labels=ilabels,ylabel="A",linestyle=:dash,args...)
         return p
+    elseif !isempty(vsigs)
+        return Plots.plot(x,vsigs; labels=vlabels,ylabel="V",xlabel=simxlabel(),args...)
+    elseif !isempty(isigs)
+        return Plots.plot(x,isigs; labels=ilabels,ylabel="A",xlabel=simxlabel(),args...)
     else
-        return nothing
+        throw(ArgumentError("$(join(names, ", ")) are neither node voltages nor source currents"))
     end
-    
 end
 
 function plot(v::Vector{Vector};args...)
-    pl=NgHerb.curplot()
-    if occursin("tran",pl)
-        t=tran_time()
-        Plots.plot(t,v;xlabel="Time [$(unit(t[1]))]",args...)
-    elseif occursin("dc",pl)
-        Plots.plot(dc_sweep(),v;args...)
-    elseif occursin("ac",pl)
-        Plots.plot(ac_freq(),v;args...)
-    end
+    Plots.plot(simx(),v;xlabel=simxlabel(),args...)
 end
 export plot
 
@@ -1696,11 +1711,11 @@ julia> bode(2,"v1")
 ``` 
 """
 function bode(nets...;args...)
+    require_analysis((:ac,), "bode")
     vecs = find_vecs(nets...)
     labels=replace.(vecs,r"(.*)#branch"=>s"I(\1)")
     labels=reshape(labels,(1,length(labels)))
-    if occursin("ac",NgHerb.curplot())
-        p=Plots.plot(Plots.plot(ac_freq(),dB20.(magnitudes(vecs));
+    p=Plots.plot(Plots.plot(ac_freq(),dB20.(magnitudes(vecs));
                     xscale=:log10,
                     ylabel="Magnitude [dB]",
                     labels,
@@ -1713,7 +1728,6 @@ function bode(nets...;args...)
                     args...);
                layout=(2,1)
              )
-    end
     return p
 end
 export bode
@@ -1727,9 +1741,13 @@ running a simulation.
 
 Measurement        Function Format      Comment
 ------------      --------------------  -----------------------
-Voltage Gain       measure(:Av;in,out)  `in`,`out` are nodes
-Transconductance   measure(:Gm;in,out)  `out` is a voltage source
-Slew Rate          measure(:slew;node)
+Voltage Gain       measure(:Av;in,out)  `in`,`out` are nodes (transient)
+Transconductance   measure(:Gm;in,out)  `out` is a voltage source (transient)
+Slew Rate          measure(:slew;node)  (transient)
+Cutoff frequency   measure(:cutoff;name) -3 dB point (AC)
+
+Names are not case sensitive. An `ArgumentError` is thrown if the latest
+analysis is not of the kind the measurement needs.
 
 """
 function measure(s::Symbol;args...)
@@ -1739,44 +1757,39 @@ end
 
 
 function measure(::Val{:Gm};in,out)
-    if occursin("tran",NgHerb.curplot())
-        NgHerb.cmd("meas tran iopp pp i($out)")
-        NgHerb.cmd("meas tran vipp pp v($in)")
-        iopp=NgHerb.getrealvec("iopp")[1]*u"A"
-        vipp=NgHerb.getrealvec("vipp")[1]*u"V"
-        return iopp/vipp        
-    end
+    require_analysis((:tran,), "measure(:Gm)")
+    NgHerb.cmd("meas tran iopp pp i($(spice_name(out)))")
+    NgHerb.cmd("meas tran vipp pp v($(spice_name(in)))")
+    iopp=NgHerb.getrealvec("iopp")[1]*u"A"
+    vipp=NgHerb.getrealvec("vipp")[1]*u"V"
+    return iopp/vipp
 end
 
 
 function measure(::Val{:Av};in,out)
-    if occursin("tran",NgHerb.curplot())
-        NgHerb.cmd("meas tran vopp pp v($out)")
-        NgHerb.cmd("meas tran vipp pp v($in)")
-        vopp=NgHerb.getrealvec("vopp")[1]
-        vipp=NgHerb.getrealvec("vipp")[1]
-        return vopp/vipp
-    end
+    require_analysis((:tran,), "measure(:Av)")
+    NgHerb.cmd("meas tran vopp pp v($(spice_name(out)))")
+    NgHerb.cmd("meas tran vipp pp v($(spice_name(in)))")
+    vopp=NgHerb.getrealvec("vopp")[1]
+    vipp=NgHerb.getrealvec("vipp")[1]
+    return vopp/vipp
 end
 
 
 function measure(::Val{:slew};node)
-    if occursin("tran",NgHerb.curplot())
-        #NgHerb.cmd("meas tran slew deriv v($node)")
-        NgHerb.cmd("let slew=maximum(deriv(v($node)))")
-        deriv=NgHerb.getrealvec("slew")*1e-6u"V/μs"
-        return deriv[1]
-    end
+    require_analysis((:tran,), "measure(:slew)")
+    NgHerb.cmd("let slew=maximum(deriv(v($(spice_name(node)))))")
+    deriv=NgHerb.getrealvec("slew")*1e-6u"V/μs"
+    return deriv[1]
 end
 
 function measure(::Val{:cutoff};name)
-    if occursin("ac",NgHerb.curplot())
-        vname = find_vec(name)
-        mag = dB20.(magnitudes(vname)[1])
-        cutoff_mag = maximum(mag) - 3.0
-        NgHerb.cmd("meas ac fc when vdb($vname)=$cutoff_mag")
-        return NgHerb.getrealvec("fc")[1]*u"Hz"
-    end
+    require_analysis((:ac,), "measure(:cutoff)")
+    vname = find_vec(name)
+    mag = dB20.(magnitudes(vname)[1])
+    cutoff_mag = maximum(mag) - 3.0
+    NgHerb.cmd("meas ac fc when vdb($vname)=$cutoff_mag")
+    return NgHerb.getrealvec("fc")[1]*u"Hz"
 end
 
 
