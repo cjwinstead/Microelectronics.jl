@@ -278,8 +278,8 @@ $(U)pulse(name,nplus,nminus;args...)       = Source(;species="$(u)source",prefix
 end
 
 
-function Spectrum(node::String,fundamental::Quantity;N=20,D=50)
-    spectrum = fft(node;frequency=fundamental)
+function Spectrum(node,fundamental::Quantity;N=20,D=50)
+    spectrum = fft(node;frequency=fundamental,N,D)
     spectrum = distortion(spectrum)
     #println("completed fft and distortion analysis")
     f     = spectrum.f .* u"Hz"
@@ -299,29 +299,6 @@ function Spectrum(node::String,fundamental::Quantity;N=20,D=50)
              harmonics,thd)
 end
 export Spectrum
-
-
-"""
-   plot(𝒮::Spectrum; nh=10, kwargs...)
-
-Plot the magnitude spectrum in dB. By default, the horizontal scale is
-linear. Vertical lines are overlaid to indicate the fundamental and harmonic
-frequencies. The `nh` parameter controls how many harmonics are shown.
-Additional plot arguments are passed through to `Plots.plot` function. 
-"""
-function plot(𝒮::Spectrum; nh=10,kwargs...)
-    f₀ = ustrip(𝒮.fundamental => u"Hz")
-    Plots.plot(ustrip.(𝒮.f),[ustrip.(𝒮.db)];
-        xlabel="Frequency [Hz]",
-        ylabel="Magnitude [dB]",
-        legend=:none,
-        xlims=(f₀*0.5,f₀*nh),
-        kwargs...
-        )    
-    vline!(ustrip(𝒮.fundamental=>u"Hz").*collect(1:nh))
-end
-
-
 
 
 function alter(s::Source;frequency=nothing,amplitude=nothing,offset=nothing,phase=nothing)

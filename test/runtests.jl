@@ -5,6 +5,15 @@ using Test
 
 be_quiet()                      # keep ngspice's own messages out of the test log
 
+# Microelectronics doesn't depend on Plots: until a plotting package is
+# loaded, plotting functions explain what to do.
+@testset "Plotting before a plotting package is loaded" begin
+    err = try Microelectronics.plot_recipe(nothing) catch e; e end
+    @test err isa ErrorException && occursin("using Plots", err.msg)
+end
+
+using Plots                     # test-only dependency
+
 #================ Helpers shared by the test files ================#
 
 "Collapse runs of whitespace, so tests don't depend on column alignment."

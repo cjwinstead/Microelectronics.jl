@@ -1,4 +1,4 @@
-using Microelectronics
+using Microelectronics, Plots
 
 
 #============ PARAMETERS ===========================#
@@ -65,13 +65,9 @@ simulate(:ac;start,stop,steps)
 
 
 #=========== PLOT RESULT =================================#
-# display Bode Plot dB"2", phase"2" vs frequency
+# display the Bode plot of node 2, marking the cutoff frequency
 
-p=plot(plot(ac_freq(),[dB"2"]; title="Magnitude [dB]"),
-       plot(ac_freq(),[phase"2"]; title="Phase [°]"),    
-       xscale=:log10,
-       layout=(2,1)
-       )
+p = bode("2")
 
 vline!(p[1],[ustrip(fc)];labels=:none)
 vline!(p[2],[ustrip(fc)];labels=:none)

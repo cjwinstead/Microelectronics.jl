@@ -1,4 +1,4 @@
-using Microelectronics
+using Microelectronics, Plots
 
 RF = 2u"kΩ"
 RI = 1u"kΩ"
@@ -36,7 +36,7 @@ simulate(:tran;tmax,tstep)
 G = measure(:Av;in="1",out="3")
 report("Gain magnitude is $G")
 
-plot([node"1",node"2",node"3"];labels=["vin" "vminus" "vout"])
+plot(signals("1","2","3");labels=["vin" "vminus" "vout"])
 
 
 

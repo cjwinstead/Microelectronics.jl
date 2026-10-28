@@ -1,4 +1,4 @@
-using Microelectronics
+using Microelectronics, Plots
 
 RF = 2u"kΩ"
 RI = 1u"kΩ"
@@ -34,7 +34,7 @@ report("Gain magnitude is $G")
 slew = measure(:slew;node="3")
 report("Observed maximum slew rate is $slew")
 
-plot([node"1",node"2",node"3"];labels=["vin" "vminus" "vout"])
+plot(signals("1","2","3");labels=["vin" "vminus" "vout"])
 
 
 

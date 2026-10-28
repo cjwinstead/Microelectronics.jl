@@ -234,6 +234,59 @@
         @test measure(:slew; node="IN") ≈ measure(:slew; node="in")
     end
 
+    @testset "signals" begin
+        simulate_circuit(:tran; tstep=10u"μs", tmax=2u"ms",
+                         sources=[Vsin("V1",1,0;amplitude=1u"V",frequency=1u"kHz")],
+                         components=[Resistor("R1",1,2,1u"kΩ"), Resistor("R2",2,0,1u"kΩ")])
+        s = signals("1","2","V1")
+        @test s isa Signals
+        @test s.kind == :tran && length(s) == 3
+        @test keys(s) == ["V(1)","V(2)","I(v1)"]
+        @test unit(s.x[1]) == u"ms" && s.x[end] ≈ 2u"ms"
+        @test s["2"] == s[2] == s["V(2)"]                   # by name, position or label
+        @test s["V1"] == s["v1"] == s["I(v1)"]
+        @test dimension(s["V1"][1]) == dimension(u"A")
+        @test maximum(abs, s["2"]) ≈ 0.5u"V" rtol=0.01
+        @test unit(s["2"][1]) == u"mV"                      # scaled for readability
+        @test_throws KeyError s["zzz"]
+        @test occursin("V(2) [mV]", sprint(show, s))
+        @test keys(signals(nodes=["2"], branches=["V1"])) == ["V(2)","I(v1)"]
+        @test_throws ArgumentError signals()
+        @test_throws ArgumentError signals(nodes=["V1"])    # V1 is not a node
+        @test_throws ArgumentError signals(branches=["2"])  # 2 is not a source
+
+        # a node and a source with the same name: the keywords choose
+        simulate_circuit(:op; sources=[Vdc("V1","v1",0,2u"V")], components=[Resistor("R1","v1",0,1u"kΩ")])
+        @test keys(signals("v1")) == ["V(v1)"]              # positional: node first
+        @test keys(signals(branches=["v1"])) == ["I(v1)"]
+        @test signals(nodes=["v1"])["v1"] ≈ [2u"V"]
+        @test signals(branches=["V1"])[1] ≈ [-2u"mA"]
+        @test isnothing(signals("v1").x)                    # operating point: no axis
+
+        simulate_circuit(:ac; start=1u"kHz", stop=1u"kHz", steps=1, mode=:lin,
+                         sources=[Vac("V1",1,0)],
+                         components=[Resistor("R1",1,2,1u"kΩ"), Capacitor("C1",2,0,1u"μF")])
+        a = signals("2")
+        @test a.kind == :ac && a.x ≈ [1000]
+        @test ustrip(u"V", a["2"][1]) ≈ 1/(1 + 2π*1e3*1e-3*im) rtol=1e-4   # complex response
+    end
+
+    @testset "autoscale" begin
+        A = Microelectronics.autoscale
+        @test unit(A([1u"V", 2u"mV"])[1]) == u"V"
+        @test unit(A(vcat([1.0u"V"], [2.0u"mV"]))[1]) == u"V"     # mixed units promote to SI base
+        @test unit(A([-4.7e-3u"A"])[1]) == u"mA"                   # negative values too
+        @test unit(A([0.0u"V", 0.0u"V"])[1]) == u"V"
+        @test A([1u"s"]) == [1u"s"]                                # not a voltage or current
+    end
+
+    @testset "Transient with a maximum step" begin
+        simulate_circuit(:tran; tstep=100u"μs", tmax=1u"ms", maxstep=1u"μs",
+                         sources=[Vsin("V1",1,0;amplitude=1u"V",frequency=1u"kHz")],
+                         components=[Resistor("RL",1,0,1u"kΩ")])
+        @test length(tran_time()) > 500                     # ngspice kept steps ≤ 1 μs
+    end
+
     @testset "String macros read fresh results" begin
         # they expand to calls, so inside a function or loop each call sees the
         # latest simulation rather than a value captured when the code was parsed

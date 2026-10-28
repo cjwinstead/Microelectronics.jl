@@ -13,10 +13,21 @@ needs. Primary features of Microelectronics.jl include:
 
 * **Netlist creation** -- SPICE elements are instantiated via a variety of Julia functions.
 * **Unitful conversions** -- set component parameters with Unitful, e.g. `1u"nF"` is rendered as `1e-9` in the netlist.
-* **Plots** -- some common plot definitions including transient, dc sweep, and Bode plots.
+* **Plots** -- plot recipes for simulation results (`plot(signals("in","out"))`), Bode plots
+  (`bode("out")`) and spectra. Load a plotting package to draw them: `using Microelectronics, Plots`.
 
-This module is in an early stage. Dependencies are still being added and removed; for
-example I'm still deciding whether it makes sense to have NgHerb (or NgSpice) as a 
-dependency, as opposed to treating it as a companion module. My bias is to load everything 
-(NgHerb, Plots, etc) so that students don't need to learn too much about Julia packages
-before they can complete assignments.
+## Dependencies
+
+Microelectronics keeps its dependencies small: NgHerb (the ngspice interface),
+Unitful, OrderedCollections, RecipesBase, Reexport, and the Printf standard library.
+Plotting uses recipes, so any package that supports RecipesBase recipes can draw
+the results; Plots.jl is the usual choice:
+
+```julia
+using Microelectronics, Plots
+
+build_netlist(; sources=[Vsin("VIN","in",0; amplitude=1u"V", frequency=1u"kHz")],
+                components=[Resistor("R1","in","out",1u"kΩ"), Capacitor("C1","out",0,100u"nF")])
+simulate(:tran; tstep=10u"μs", tmax=2u"ms")
+plot(signals("in", "out", "VIN"))       # voltages and the source current
+```

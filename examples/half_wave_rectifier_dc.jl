@@ -1,4 +1,4 @@
-using Microelectronics
+using Microelectronics, Plots
 
 R = 1u"kΩ"
 D = "D1N4004"  # diode model type
@@ -28,7 +28,7 @@ load_netlist(netlist)
 
 simulate(:dc;device="v1",start,stop,step)
 
-plot([node"2"];labels=["vout"])
+plot(signals("2");labels=["vout"])
 
 
 

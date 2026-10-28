@@ -26,16 +26,18 @@
         quietly(() -> build_netlist(; sources=[Vsin("V1",1,0;amplitude=1u"V",frequency=1u"kHz")],
                                     components=[Resistor("RL",1,0,1u"kΩ")]))
         s = quietly(() -> fft("1"; frequency=1u"kHz"))
-        @test keys(s) ⊇ (:fundamental, :f, :mag, :phase, :db)
+        @test keys(s) ⊇ (:fundamental, :f, :mag, :phase, :db, :t, :v)
         Δf = s.f[2] - s.f[1]                               # FFT bin spacing
         @test abs(s.f[argmax(s.mag)] - 1000) < Δf          # spectral peak at the fundamental
         d = distortion(s)
         @test length(d.harmonics) == 10
         @test d.thd < 1e-3
-        # Known bug: ngspice's FFT bins (power-of-two samples) don't fall on the
-        # harmonics, and `distortion` interpolates between bins, so amplitudes
-        # are underestimated (the 1 V fundamental reads ≈ 0.83 V).
-        @test_broken d.harmonics[1][1] ≈ 1 rtol=0.02
+        # harmonics are evaluated exactly at k·f₀, independent of the FFT bins
+        @test d.harmonics[1][1] ≈ 1 rtol=0.005               # 1 V amplitude
+        @test d.harmonics[1][2] ≈ -π/2 atol=0.01             # a sine lags a cosine by 90°
+        @test all(h -> h[1] < 1e-3, d.harmonics[2:end])
+        @test length(distortion(s; nh=3).harmonics) == 3
+        @test length(distortion(s; nh=100).harmonics) == 24  # capped below Nyquist (D=50)
 
         S = quietly(() -> Spectrum("1", 1u"kHz"))
         @test S isa Spectrum
@@ -43,6 +45,8 @@
         @test unit(S.f[1]) == u"Hz"
         @test unit(S.mag[1]) == u"V"
         @test S.thd < 1e-3
+        @test S.harmonics[1][1] ≈ 1u"V" rtol=0.005
+        @test length(quietly(() -> Spectrum("1", 1u"kHz"; N=10, D=20)).harmonics) == 9
 
         # clipping by two anti-parallel diodes adds odd harmonics
         quietly(() -> build_netlist(; sources=[Vsin("V1",1,0;amplitude=2u"V",frequency=1u"kHz")],

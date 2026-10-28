@@ -1,4 +1,4 @@
-using Microelectronics
+using Microelectronics, Plots
 
 
 #============ PARAMETERS ===========================#
@@ -81,4 +81,4 @@ transient(;tstep,tmax)
 #=========== PLOT RESULT =============================#
 # display voltage traces node"1" and node"2" vs time
 
-plot(tran_time(),[node"1",node"2"])
+plot(signals("1","2"))

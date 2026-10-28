@@ -1,4 +1,4 @@
-using Microelectronics
+using Microelectronics, Plots
 
 Gm   = 1u"mA/V"
 Rin  = 100u"kΩ"
@@ -45,4 +45,4 @@ load_netlist(netlist)
 
 transient(;tstep,tmax)
 
-plot(d"time",[d"Vm1#branch"])
+plot(signals(branches=["Vm1"]))

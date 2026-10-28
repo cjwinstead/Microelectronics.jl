@@ -1,7 +1,10 @@
 module Microelectronics
 
 using Reexport
-@reexport using OrderedCollections,LaTeXStrings,Markdown,Unitful,Printf,Interpolations,Plots
+@reexport using OrderedCollections,Unitful,Printf
+
+# Plotting is done with recipes; see Plotting.jl
+import RecipesBase
 
 # String macros (ng"", real"", imag"", i"", magnitude"", dB"", phase"", vec"")
 # come from NgHerb and are re-exported below.
@@ -11,7 +14,6 @@ using NgHerb: @ng_str, @real_str, @imag_str, @i_str, @magnitude_str,
 
 import Base.show
 import Base.print
-import Plots.plot
 import Base.=>
     
 include("Objects.jl")
@@ -1181,7 +1183,8 @@ must be provided, depending on the analysis type.
 Analysis   Keyword Argument   Description
 --------   -----------------  ------------------
 `:tran`    `tmax`             Time to end the simulation
-           `tstep`            Maximum time-step
+           `tstep`            Output time step
+           `maxstep`          (optional) largest internal time step
 `:dc`      `device`           Device or parameter to sweep
            `start`            Initial value
            `stop`             Final value
@@ -1241,8 +1244,8 @@ function require_analysis(kinds, what)
 end
 
 
-function simulate(::Val{:tran};tstep,tmax)
-    transient(;tstep,tmax)
+function simulate(::Val{:tran};tstep,tmax,maxstep=nothing)
+    transient(;tstep,tmax,maxstep)
 end
 
 function simulate(::Val{:dc};device,start,stop,step)
@@ -1260,8 +1263,9 @@ end
 export simulate
 
 
-function transient(;tstep,tmax)
+function transient(;tstep,tmax,maxstep=nothing)
     s="tran $(qstr(tstep)) $(qstr(tmax))"
+    isnothing(maxstep) || (s *= " 0 $(qstr(maxstep))")   # limit ngspice's internal step
     NgHerb.cmd(s)
 end
 export transient
@@ -1295,33 +1299,55 @@ export ac
 
 
 
-function fft(node::String; frequency=1u"kHz", N=20, D=50)
+"""
+   fft(node; frequency=1u"kHz", N=20, D=50)
+
+Simulate `N` periods of `frequency` with `D` time steps per period, then
+return the spectrum of the voltage at `node` from ngspice's FFT (`f`, `mag`,
+`phase`, `db`), together with the evenly sampled waveform (`t`, `v`) that
+[`distortion`](@ref) uses.
+"""
+function fft(node; frequency=1u"kHz", N=20, D=50)
     T = 1/frequency => u"s"
     tstep = T/D
-    tmax  = N*T
-    simulate(:tran;tstep,tmax)
-    NgHerb.cmd("linearize")
+    simulate(:tran; tstep, tmax=N*T, maxstep=tstep)   # resolve every period finely
+    NgHerb.cmd("linearize")                           # resample on an even tstep grid
+    t = NgHerb.getrealvec("time")
+    v = NgHerb.getrealvec(string(node))
     NgHerb.cmd("fft v($(spice_name(node)))")
     f = NgHerb.getrealvec("frequency")
-    phase = NgHerb.getphasevec(node)
-    mag = NgHerb.getmagnitudevec(node)
+    phase = NgHerb.getphasevec(string(node))
+    mag = NgHerb.getmagnitudevec(string(node))
     db  = dB20.(mag)
-    return (;fundamental=frequency,f,mag,phase,db)
+    return (;fundamental=frequency,f,mag,phase,db,t,v)
 end
 export fft
 
 
+"""
+   distortion(spectrum; nh=10)
 
-function distortion(spectrum::NamedTuple)
-    f0 = ustrip(spectrum.fundamental => u"Hz")
-    f = spectrum.f 
-    v = spectrum.mag
-    ϕ = spectrum.phase
-    intrp_v = linear_interpolation(f,v)
-    intrp_ϕ = linear_interpolation(f,ϕ)
-    f_harmonic = f0 .* collect(1:10)
-    harmonics  = [ (intrp_v(fh), intrp_ϕ(fh)) for fh in f_harmonic if fh < maximum(f) ]
-    thd = sqrt(sum(x[1]^2 for x in harmonics[2:end]))/harmonics[1][1]
+Add the harmonics and total harmonic distortion to the result of
+[`fft`](@ref). `harmonics` holds `(amplitude, phase)` for harmonics 1 to `nh`
+(phase in radians, relative to a cosine), and `thd` is the RMS of
+harmonics 2 to `nh` relative to the fundamental.
+
+Each harmonic is evaluated exactly at k·f₀ over the whole periods of the
+waveform, so the result doesn't depend on the FFT's bin spacing.
+"""
+function distortion(spectrum::NamedTuple; nh=10)
+    f0 = ustrip(u"Hz", spectrum.fundamental)
+    t, v = spectrum.t, spectrum.v
+    dt = t[2] - t[1]
+    periods = floor(Int, (t[end] - t[1])*f0 + 1e-6)
+    keep = t .> t[end] - periods/f0 + dt/2              # exactly `periods` whole periods
+    t, v = t[keep], v[keep]
+    nh = min(nh, floor(Int, 1/(2*dt*f0)) - 1)           # stay below the Nyquist frequency
+    harmonics = map(1:nh) do k
+        z = 2/length(t) * sum(v .* cis.(-2π*k*f0 .* t))
+        (abs(z), angle(z))
+    end
+    thd = sqrt(sum(h[1]^2 for h in harmonics[2:end]))/harmonics[1][1]
     return (; spectrum..., harmonics, thd)
 end
 export distortion
@@ -1491,15 +1517,17 @@ name of a voltage source, whose current is the vector `"<name>#branch"`.
 Case doesn't matter. Throws an `ArgumentError` listing the available names
 if there is no match.
 """
-function find_vec(s)
+function find_vec(s; node=true, branch=true)
     name = spice_name(s)
     vecs = NgHerb.listcurvecs()
-    for candidate in (name, "v($name)", "$name#branch")
+    candidates = [(node ? [name, "v($name)"] : String[]); (branch ? ["$name#branch"] : String[])]
+    for candidate in candidates
         i = findfirst(v -> lowercase(v) == candidate, vecs)
         isnothing(i) || return vecs[i]
     end
     shown = sort(filter(v -> !occursin(r"^(time|frequency)$|-sweep$", lowercase(v)), vecs))
-    throw(ArgumentError("there is no node or source named \"$s\" in the latest analysis " *
+    what = node && branch ? "node or source" : node ? "node" : "voltage source"
+    throw(ArgumentError("there is no $what named \"$s\" in the latest analysis " *
                         "(:$(analysis_kind())). Available: $(join(shown, ", "))"))
 end
 
@@ -1610,127 +1638,8 @@ function simxlabel()
 end
 
 
-"""
-    plot(v::Vector{Vector};args...)
-
-Plot a Vector of Vectors where the horizontal axis is
-determined by the latest SPICE simulation.
-
-Simulation Type      X Axis
-----------------    ------------
-:tran (transient)    tran_time()
-:dc   (dc sweep)     dc_sweep()
-:ac   (ac sweep)     ac_freq()
 
 
-# Examples
-
-```julia-repl
-julia> v1=vsin("v1",1,0;ac=1,dc=1,frequency=1u"kHz",amplitude=1u"V")
-v1    1     0      DC 1 AC 1 SIN (0,1,1000,0) 
-
-julia> build_netlist(sources=[v1],components=[resistor("R1",1,2,1u"kΩ"),capacitor("C1",2,0,1u"nF")]);
-...
-
-julia> simulate(:dc;device="v1",start=0,stop=2,step=0.1);
-...
-
-julia> plot([node"1",node"2"];labels=["v1" "v2"])
-
-julia> simulate(:ac;start=10u"kHz",stop=10u"MHz",steps=10)
-...
-
-julia> plot([dB"1",dB"2"];xscale=:log10,labels=["v1" "v2"])
-
-```
-        """
-function plot(names::Union{AbstractString,Number}...;args...)
-    analysis_kind() == :ac && throw(ArgumentError(
-        "AC results are complex; use bode($(join(repr.(names), ", "))) to plot magnitude and phase"))
-    vecs  = find_vecs(names...)              # throws if a name isn't found
-    data  = NgHerb.getvec.(vecs)
-    label(n) = replace(n, r"(.*)#branch" => s"I(\1)")
-    vsigs   = [y[3] for y in data if y[2]=="voltage"]
-    isigs   = [y[3] for y in data if y[2]=="current"]
-    vlabels = permutedims([label(y[1]) for y in data if y[2]=="voltage"])
-    ilabels = permutedims([label(y[1]) for y in data if y[2]=="current"])
-    x = simx()
-    if !isempty(vsigs) && !isempty(isigs)
-        p = Plots.plot(x,vsigs; labels=vlabels,ylabel="V",xlabel=simxlabel(),args...)
-        Plots.plot!(twinx(p),x,isigs; labels=ilabels,ylabel="A",linestyle=:dash,args...)
-        return p
-    elseif !isempty(vsigs)
-        return Plots.plot(x,vsigs; labels=vlabels,ylabel="V",xlabel=simxlabel(),args...)
-    elseif !isempty(isigs)
-        return Plots.plot(x,isigs; labels=ilabels,ylabel="A",xlabel=simxlabel(),args...)
-    else
-        throw(ArgumentError("$(join(names, ", ")) are neither node voltages nor source currents"))
-    end
-end
-
-function plot(v::Vector{Vector};args...)
-    Plots.plot(simx(),v;xlabel=simxlabel(),args...)
-end
-export plot
-
-
-"""
-   bode(vectors...;args...)
-
-Create a Bode plot (with magnitude and phase subplots)
-for the indicated `vectors`. The vectors are a comma-separated
-list of node names (for voltage signals) or source names (for
-current signals). Voltage and current can be mixed on the same
-plot. Magnitude units are dBV and dBA for voltage and current, resp. 
-
-Additional keyword arguments `args` are passed through to `Plots.plot`.
-
-# Examples
-
-```julia-repl
-
-julia> build_netlist(sources=[vac("V1",1,0)],components=[resistor("R1",1,2,1u"kΩ"),capacitor("C1",2,0,1u"μF")])
-Note: No compatibility mode selected!
-Circuit: * circuit
-* circuit
-
-V1    1     0      AC 1
-R1    1     2     1000
-C1    2     0     1e-06
-.end
-
-julia> ac(start=10u"Hz",stop=1u"MHz",steps=10,mode=:dec)
-Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
-Using SPARSE 1.3 as Direct Linear Solver
-stderr Note: v1: has no value, DC 0 assumed
- Reference value :  1.00000e+01
-No. of Data Rows : 51
-
-julia> bode(2,"v1")
-
-``` 
-"""
-function bode(nets...;args...)
-    require_analysis((:ac,), "bode")
-    vecs = find_vecs(nets...)
-    labels=replace.(vecs,r"(.*)#branch"=>s"I(\1)")
-    labels=reshape(labels,(1,length(labels)))
-    p=Plots.plot(Plots.plot(ac_freq(),dB20.(magnitudes(vecs));
-                    xscale=:log10,
-                    ylabel="Magnitude [dB]",
-                    labels,
-                    args...),
-               Plots.plot(ac_freq(),phases(vecs...);
-                    xscale=:log10,
-                    ylabel="Phase [°]",
-                    xlabel="Frequency [Hz]",
-                    labels,
-                    args...);
-               layout=(2,1)
-             )
-    return p
-end
-export bode
 
 
 """
@@ -1876,7 +1785,6 @@ export @ng_str, @real_str, @imag_str, @node_str, @i_str, @magnitude_str, @dB_str
 export @table
 export @pwl_str
 
-
-
+include("Plotting.jl")
 
 end

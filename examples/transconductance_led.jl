@@ -1,4 +1,4 @@
-using Microelectronics
+using Microelectronics, Plots
 
 RI = 150u"Ω"
 D  = "SFH4554"
@@ -29,7 +29,7 @@ tmax  = 4u"ms"
 
 simulate(:tran;tstep,tmax)
 
-display(plot([i"vm1"];labels=["Iout"]))
+display(plot(signals(branches=["vm1"]);labels=["Iout"]))
 
 
 Gm = 1000*measure(:Gm;in="1",out="vm1")u"mA/V"
