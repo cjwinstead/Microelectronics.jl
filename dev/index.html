@@ -165,7 +165,8 @@
 ><code>Microelectronics.magnitudes</code></a></li><li><a href=#Microelectronics.measure-Tuple{Symbol}
 ><code>Microelectronics.measure</code></a></li><li><a href=#Microelectronics.mosfet
 ><code>Microelectronics.mosfet</code></a></li><li><a href=#Microelectronics.nextname-Tuple{Any}
-><code>Microelectronics.nextname</code></a></li><li><a href=#Microelectronics.nodes-Tuple
+><code>Microelectronics.nextname</code></a></li><li><a href=#Microelectronics.node_voltage-Tuple{Any}
+><code>Microelectronics.node_voltage</code></a></li><li><a href=#Microelectronics.nodes-Tuple
 ><code>Microelectronics.nodes</code></a></li><li><a href=#Microelectronics.opamp-Tuple{}
 ><code>Microelectronics.opamp</code></a></li><li><a href=#Microelectronics.outer_sweep_command-Tuple{Any}
 ><code>Microelectronics.outer_sweep_command</code></a></li><li><a href=#Microelectronics.phases-Tuple
@@ -174,13 +175,16 @@
 ><code>Microelectronics.pwl_string</code></a></li><li><a href=#Microelectronics.qstr-Tuple{Any}
 ><code>Microelectronics.qstr</code></a></li><li><a href=#Microelectronics.rad-Tuple{Quantity}
 ><code>Microelectronics.rad</code></a></li><li><a href=#Microelectronics.register_mosfets-Tuple{AbstractString}
-><code>Microelectronics.register_mosfets</code></a></li><li><a href=#Microelectronics.report-Tuple{IO, OrderedDict}
-><code>Microelectronics.report</code></a></li><li><a href=#Microelectronics.report-Tuple{String}
+><code>Microelectronics.register_mosfets</code></a></li><li><a href=#Microelectronics.report-Tuple{String}
+><code>Microelectronics.report</code></a></li><li><a href=#Microelectronics.report-Tuple{IO, OrderedDict}
 ><code>Microelectronics.report</code></a></li><li><a href=#Microelectronics.save_mosfet_quantities-Tuple{}
-><code>Microelectronics.save_mosfet_quantities</code></a></li><li><a href=#Microelectronics.signal_data-Tuple{Any}
-><code>Microelectronics.signal_data</code></a></li><li><a href=#Microelectronics.simulate-Tuple{Symbol}
+><code>Microelectronics.save_mosfet_quantities</code></a></li><li><a href=#Microelectronics.signal_dB-Tuple{Any}
+><code>Microelectronics.signal_dB</code></a></li><li><a href=#Microelectronics.signal_data-Tuple{Any}
+><code>Microelectronics.signal_data</code></a></li><li><a href=#Microelectronics.signal_phase-Tuple{Any}
+><code>Microelectronics.signal_phase</code></a></li><li><a href=#Microelectronics.simulate-Tuple{Symbol}
 ><code>Microelectronics.simulate</code></a></li><li><a href=#Microelectronics.sin_string
-><code>Microelectronics.sin_string</code></a></li><li><a href=#Microelectronics.spice_parameters-Tuple{OrderedDict, Vararg{Any}}
+><code>Microelectronics.sin_string</code></a></li><li><a href=#Microelectronics.source_current-Tuple{Any}
+><code>Microelectronics.source_current</code></a></li><li><a href=#Microelectronics.spice_parameters-Tuple{OrderedDict, Vararg{Any}}
 ><code>Microelectronics.spice_parameters</code></a></li><li><a href=#Microelectronics.spice_value-Tuple{Quantity}
 ><code>Microelectronics.spice_value</code></a></li><li><a href=#Microelectronics.sweep_curves-Tuple{Integer}
 ><code>Microelectronics.sweep_curves</code></a></li><li><a href=#Microelectronics.tran_time-Tuple{}
@@ -195,7 +199,7 @@
 ><code>Microelectronics.LOADED_MOSFETS</code></a> — <span class=docstring-category
 >Constant</span></summary><section><div><p>Top-level MOSFETs in the loaded circuit: lowercase name =&gt; (drain, gate, source, body).</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L142
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L142
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.MOSFET_INSTANCE_PARAMETERS
@@ -204,7 +208,7 @@
 ><code>Microelectronics.MOSFET_INSTANCE_PARAMETERS</code></a> — <span class=docstring-category
 >Constant</span></summary><section><div><p>MOSFET instance parameters that can be given as keywords.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L16
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L16
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.MOSFET_QUANTITIES
@@ -213,7 +217,7 @@
 ><code>Microelectronics.MOSFET_QUANTITIES</code></a> — <span class=docstring-category
 >Constant</span></summary><section><div><p>Quantities kept for every MOSFET (ngspice names).</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L145
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L145
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.OUTER_SWEEP
@@ -222,7 +226,7 @@
 ><code>Microelectronics.OUTER_SWEEP</code></a> — <span class=docstring-category
 >Constant</span></summary><section><div><p>The outer source of the latest nested DC sweep: (device, start, step), or nothing.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L281
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L281
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Base.getindex-Tuple{Component, AbstractString}
@@ -231,7 +235,7 @@
 ><code>Base.getindex</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>element[quantity]</p><p>The ngspice name of a device quantity, e.g. <code>M1[&quot;gm&quot;]</code> is <code>&quot;@m1[gm]&quot;</code>.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L126-L130
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L126-L130
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Base.show-Tuple{IO, MIME{Symbol(text/plain
@@ -246,7 +250,7 @@
 :b =&gt; bar
 </code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L526-L540
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L526-L540
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Base.show-Tuple{IO, MIME{Symbol(text/plain
@@ -260,7 +264,7 @@
 hi
 there</code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L507-L519
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L507-L519
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.Hz-Tuple{Quantity}
@@ -269,7 +273,7 @@ there</code></pre></div><a class=docs-sourcelink
 ><code>Microelectronics.Hz</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>Hz(x::Quantity)</p><p>Given angular Quantity <code>x</code> with units rad/s or dimension s^-1, scale <code>x</code> by <code>1/2π</code> and replace the units with u&quot;Hz&quot;. If <code>x</code> does not meet one of these conditions, it is returned unaltered.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L402-L409
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L402-L409
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.MOSFET
@@ -280,7 +284,7 @@ there</code></pre></div><a class=docs-sourcelink
 ><code>NMOS</code></a> and <a href=#Microelectronics.PMOS
 ><code>PMOS</code></a> tie the body to the source by default. Instance parameters can be keywords or a vector of <code>Parameter</code>s.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L95-L102
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L95-L102
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.NMOS
@@ -294,7 +298,7 @@ M1    d     g     0     0     ald1105n
 julia&gt; NMOS(&quot;M2&quot;, &quot;d&quot;, &quot;g&quot;, &quot;s&quot;, 0; model=&quot;CD4007N&quot;, W=60u&quot;μm&quot;, L=10u&quot;μm&quot;)
 M2    d     g     s     0     CD4007N W=6e-05 L=1e-05</code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L48-L69
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L48-L69
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.PMOS
@@ -306,7 +310,7 @@ M2    d     g     s     0     CD4007N W=6e-05 L=1e-05</code></pre></div><a class
 >julia&gt; PMOS(&quot;M3&quot;, &quot;out&quot;, &quot;in&quot;, &quot;vdd&quot;)
 M3    out   in    vdd   vdd   ald1105p</code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L75-L89
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L75-L89
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.ac-Tuple{}
@@ -315,7 +319,7 @@ M3    out   in    vdd   vdd   ald1105p</code></pre></div><a class=docs-sourcelin
 ><code>Microelectronics.ac</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>ac(;start,stop,mode,points)</p><p>Run an AC simulation with parameters:</p><ul><li><code>start</code> = initial (low) frequency</li><li><code>stop</code>  = final (high) frequency</li><li><code>mode</code> =<ul><li><code>lin</code> for linear</li><li><code>dec</code> for logarithmic across decades</li><li><code>oct</code> for logarithmic across octaves</li></ul></li><li><code>steps</code> = number of frequency steps per interval</li></ul></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1260-L1272
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1259-L1271
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.ac_freq-Tuple{}
@@ -352,7 +356,7 @@ julia&gt; ac_freq()
  39.810717055349734
 </code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1385-L1423
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1384-L1422
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.analysis_kind-Tuple{}
@@ -361,7 +365,7 @@ julia&gt; ac_freq()
 ><code>Microelectronics.analysis_kind</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>analysis_kind()</p><p>Return the kind of the latest analysis as a Symbol: <code>:op</code>, <code>:dc</code>, <code>:ac</code>, <code>:tran</code>, <code>:spec</code> (after <code>fft</code>), or <code>:none</code> if nothing has been simulated.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1207-L1212
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1206-L1211
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.bipole-NTuple{4, Any}
@@ -375,7 +379,7 @@ julia&gt; ac_freq()
 julia&gt; bipole(:C, 2, 3, 1u&quot;nF&quot;)
 &quot;C1    2    3   1e-9&quot; </code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L785-L805
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L785-L805
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.bipole-NTuple{5, Any}
@@ -389,7 +393,7 @@ julia&gt; bipole(:C, 2, 3, 1u&quot;nF&quot;)
 julia&gt; bipole(:C, 1, 2, 3, 1u&quot;nF&quot;)
 &quot;C1    2    3   1e-9&quot; </code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L813-L834
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L813-L834
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.bode-Tuple
@@ -418,7 +422,7 @@ No. of Data Rows : 51
 julia&gt; bode(2,&quot;v1&quot;)
 </code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1698-L1733
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1697-L1732
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.build_netlist
@@ -447,7 +451,7 @@ R1    1     0     1000
 
 .end</code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L901-L939
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L901-L939
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.curve_series-Tuple{Any, Any, Any}
@@ -457,7 +461,7 @@ R1    1     0     1000
 >Method</span></summary><section><div><p>curve_series(x, ys, labels)</p><p>Split each signal in <code>ys</code> into one series per curve of the latest analysis (see <a href=#Microelectronics.sweep_curves-Tuple{Integer}
 ><code>sweep_curves</code></a>), for plotting. Returns vectors of x data, y data and labels.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L335-L341
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L335-L341
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.dB20-Tuple{Any}
@@ -481,7 +485,7 @@ julia&gt; dB20.([a,b])
  [0.0, 20.0, 40.0]
  [-20.0, -40.0, -60.0]</code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L262-L288
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L262-L288
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.dc-Tuple{}
@@ -490,7 +494,7 @@ julia&gt; dB20.([a,b])
 ><code>Microelectronics.dc</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>dc(; device, start, stop, step, sweep2=nothing)</p><p>Run a DC sweep of <code>device</code> (a voltage or current source, or a resistor). With <code>sweep2 = (device2, start2, stop2, step2)</code>, the first sweep is repeated for each value of <code>device2</code>, giving a family of curves.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1246-L1252
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1245-L1251
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.dc_sweep-Tuple{}
@@ -526,7 +530,7 @@ julia&gt; dc_sweep()
  1.0
 </code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1329-L1365
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1328-L1364
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.device_values-Tuple{Any}
@@ -541,7 +545,7 @@ julia&gt; simulate(:op); device_values(&quot;M1&quot;)
 (id = 0.001363 A, vgs = 3.0 V, vds = 5.0 V, vbs = 0.0 V, vth = 0.7 V, vdsat = 2.3 V,
  gm = 0.001185 S, gds = 3.45e-5 S, gmbs = 0.000... S, region = :saturation)</code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L201-L229
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L201-L229
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.find_vec-Tuple{Any}
@@ -550,7 +554,7 @@ julia&gt; simulate(:op); device_values(&quot;M1&quot;)
 ><code>Microelectronics.find_vec</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>find_vec(name; node=true, branch=true)</p><p>Return the name of the result vector for a node voltage, a source current or a MOSFET drain current in the latest analysis. <code>name</code> is a node name (<code>&quot;out&quot;</code>, <code>2</code>), a voltage source, whose current is the vector <code>&quot;&lt;name&gt;#branch&quot;</code>, or a MOSFET, whose drain current is <code>&quot;@&lt;name&gt;[id]&quot;</code>. Case doesn&#39;t matter. With <code>branch=false</code> only node voltages are matched; with <code>node=false</code> only currents. Throws an <code>ArgumentError</code> listing the available names if there is no match.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1468-L1478
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1467-L1477
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.hasall-Tuple{Any, Any}
@@ -559,7 +563,7 @@ julia&gt; simulate(:op); device_values(&quot;M1&quot;)
 ><code>Microelectronics.hasall</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>hasall(args,k)</p><p>Return true if <code>args</code> has all keys specified by <code>k</code>. Usually <code>args</code> is a Dict or NamedTuple and <code>k</code> is a Vector.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L239-L244
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L239-L244
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.hasany-Tuple{Any, Any}
@@ -568,7 +572,7 @@ julia&gt; simulate(:op); device_values(&quot;M1&quot;)
 ><code>Microelectronics.hasany</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>hasany(args,k)</p><p>Return true if <code>args</code> has any of the keys specified by <code>k</code>. Usually <code>args</code> is a Dict or NamedTuple and <code>k</code> is a Vector.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L249-L254
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L249-L254
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.independent_source-Tuple{Any}
@@ -577,7 +581,7 @@ julia&gt; simulate(:op); device_values(&quot;M1&quot;)
 ><code>Microelectronics.independent_source</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>independent_source(species;args...)</p><p>Instantiate an independent Voltage or Current source. <code>species</code> is &quot;V&quot; or &quot;I&quot;.</p><p><strong>Keyword arguments</strong></p><p>All instances must have the positive and negative terminals assigned via <code>nplus</code> and <code>nminus</code>.</p><p>Optionally, a <code>name</code> can be given.</p><p>Remaining keyword arguments are specific to the desired source species.</p><ul><li>DC source:<ul><li><code>dc</code> specifies the desired voltage or current</li></ul></li><li>AC source:<ul><li><code>ac</code> specifies the AC magnitude (usually 1)</li></ul></li><li>SIN source:<ul><li><code>offset</code>    </li><li><code>amplitude</code> </li><li><code>frequency</code> </li><li><code>phase</code>     </li></ul></li><li>PWL source:<ul><li><code>points</code></li></ul></li><li>PULSE source<ul><li><code>high</code></li><li><code>low</code></li><li><code>width</code></li><li><code>period</code></li></ul></li></ul><p>If no keyword arguments are given, a zero-value source is instantiated.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1010-L1044
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1009-L1043
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.iscurrent-Tuple{AbstractString}
@@ -586,7 +590,7 @@ julia&gt; simulate(:op); device_values(&quot;M1&quot;)
 ><code>Microelectronics.iscurrent</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>True if <code>name</code> is a source or MOSFET current in the latest analysis.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1500
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1499
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.isvoltage-Tuple{AbstractString}
@@ -595,7 +599,7 @@ julia&gt; simulate(:op); device_values(&quot;M1&quot;)
 ><code>Microelectronics.isvoltage</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>True if <code>name</code> is a node voltage in the latest analysis.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1497
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1496
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.load_netlist-Tuple{AbstractString}
@@ -604,7 +608,7 @@ julia&gt; simulate(:op); device_values(&quot;M1&quot;)
 ><code>Microelectronics.load_netlist</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>load_netlist(n::AbstractString)</p><p>Calls the NgHerb <code>load_netlist</code> function.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L958-L962
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L957-L961
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.magnitudes-Tuple
@@ -633,7 +637,7 @@ julia&gt; magnitudes(1,2)
  [0.998031904503645, 0.8467330159648305, 0.1571767254775899, 0.015913478971147702]
 </code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1504-L1536
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1503-L1535
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.measure-Tuple{Symbol}
@@ -642,7 +646,7 @@ julia&gt; magnitudes(1,2)
 ><code>Microelectronics.measure</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>measure(s::Symbol;args...)</p><p>Perform one of several SPICE measurements after running a simulation.</p><p>Measurement        Function Format      Comment ————      ——————–  ———————– Voltage Gain       measure(:Av;in,out)  <code>in</code>,<code>out</code> are nodes Transconductance   measure(:Gm;in,out)  <code>out</code> is a voltage source Slew Rate          measure(:slew;node)</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1758-L1770
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1757-L1769
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.mosfet
@@ -651,7 +655,7 @@ julia&gt; magnitudes(1,2)
 ><code>Microelectronics.mosfet</code></a> — <span class=docstring-category
 >Function</span></summary><section><div><p>mosfet(name, drain, gate, source, body, model=&quot;ald1105n&quot;; W, L, M, ...)</p><p>SPICE text for a MOSFET: the same as <code>string(MOSFET(...))</code>. Sizes and other instance parameters are only written when given, so the model&#39;s own defaults (e.g. W = 30 μm, L = 10 μm for the CD4007N) apply otherwise.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L114-L120
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L114-L120
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.nextname-Tuple{Any}
@@ -664,7 +668,16 @@ julia&gt; magnitudes(1,2)
 julia&gt; next_name(&quot;R&quot;)
 &quot;R2&quot;</code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L722-L735
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L722-L735
+>source</a></section></details></article><article><details class=docstring
+ open=true
+><summary id=Microelectronics.node_voltage-Tuple{Any}
+><a class=docstring-binding
+ href=#Microelectronics.node_voltage-Tuple{Any}
+><code>Microelectronics.node_voltage</code></a> — <span class=docstring-category
+>Method</span></summary><section><div><p>Voltage at node <code>name</code> in the latest simulation, scaled to a readable unit.</p></div><a class=docs-sourcelink
+ target=_blank
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1884
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.nodes-Tuple
@@ -691,7 +704,7 @@ julia&gt; nodes(1,2)
  [0.0, 0.25, 0.5]
 </code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1430-L1460
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1429-L1459
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.opamp-Tuple{}
@@ -702,7 +715,7 @@ julia&gt; nodes(1,2)
 >julia&gt; opamp(;name=&quot;OA1&quot;, nplus=0, nminus=2, out=3, model=&quot;my_opamp&quot;)
 XOA1   0     2     3     my_opamp</code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L974-L1000
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L973-L999
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.outer_sweep_command-Tuple{Any}
@@ -711,7 +724,7 @@ XOA1   0     2     3     my_opamp</code></pre></div><a class=docs-sourcelink
 ><code>Microelectronics.outer_sweep_command</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>The second half of a nested <code>dc</code> command, recording the outer sweep for plotting.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L291
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L291
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.phases-Tuple
@@ -741,7 +754,7 @@ julia&gt; phases(1,2)
 
 </code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1548-L1581
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1547-L1580
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.pulse_string-Tuple{}
@@ -750,7 +763,7 @@ julia&gt; phases(1,2)
 ><code>Microelectronics.pulse_string</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>pulse_string(;high=5u&quot;V&quot;,low=0u&quot;V&quot;,period=1u&quot;ms&quot;,width=490u&quot;ns&quot;,risetime=10u&quot;ns&quot;,falltime=10u&quot;ns&quot;,delay=10u&quot;ns&quot;,pulses=&quot;&quot;)</p><p>Returns a SPICE-formatted string for a PULSE independent source. The <code>low</code> parameter is the initial value, and <code>high</code> is the &quot;pulsed&quot; value.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L704-L710
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L704-L710
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.pwl_string-Tuple{Vector}
@@ -764,7 +777,7 @@ julia&gt; push!(points,(1u&quot;ms&quot;,2u&quot;mV&quot;))
 julia&gt; pwl_string(points)
 &quot;PWL ( 0 0 0.001 0.02)&quot;</code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L668-L688
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L668-L688
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.qstr-Tuple{Any}
@@ -781,7 +794,7 @@ julia&gt; qstr(&quot;1k&quot;)
 julia&gt; qstr(1u&quot;nF&quot;)
 &quot;1e-9&quot;</code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L618-L640
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L618-L640
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.rad-Tuple{Quantity}
@@ -790,7 +803,7 @@ julia&gt; qstr(1u&quot;nF&quot;)
 ><code>Microelectronics.rad</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>rad(x::Number)</p><p>Given an angular Quantity <code>x</code>, return the representation of <code>x</code> in radians or radians per second. If <code>x</code> is given in degrees or Hz, then the output is scaled and converted to radians or radians/sec, respectively. If <code>x</code> has no units, then it is annotated with u&quot;rad&quot; to confirm it is in radians. If <code>x</code> has some other units that reduce to dimension s^-1, then the units are stripped and replaced with u&quot;rad&quot;. </p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L341-L351
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L341-L351
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.register_mosfets-Tuple{AbstractString}
@@ -799,7 +812,7 @@ julia&gt; qstr(1u&quot;nF&quot;)
 ><code>Microelectronics.register_mosfets</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>Record the top-level MOSFETs of a netlist (called by load_netlist).</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L148
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L148
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.report-Tuple{IO, OrderedDict}
@@ -821,7 +834,7 @@ julia&gt; report(@table A=1u&quot;ms&quot; B=1u&quot;V&quot;)
 |B           |              1|            V|
 </code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L457-L479
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L457-L479
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.report-Tuple{String}
@@ -835,7 +848,7 @@ hello there
 -----------
 </code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L427-L443
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L427-L443
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.save_mosfet_quantities-Tuple{}
@@ -844,7 +857,16 @@ hello there
 ><code>Microelectronics.save_mosfet_quantities</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>Ask ngspice to keep the MOSFET quantities in the next analysis (called by simulate).</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L167
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L167
+>source</a></section></details></article><article><details class=docstring
+ open=true
+><summary id=Microelectronics.signal_dB-Tuple{Any}
+><a class=docstring-binding
+ href=#Microelectronics.signal_dB-Tuple{Any}
+><code>Microelectronics.signal_dB</code></a> — <span class=docstring-category
+>Method</span></summary><section><div><p>Magnitude of vector <code>name</code> in decibels (20 log10).</p></div><a class=docs-sourcelink
+ target=_blank
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1892
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.signal_data-Tuple{Any}
@@ -853,7 +875,16 @@ hello there
 ><code>Microelectronics.signal_data</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>signal_data(vector)</p><p>The type (&quot;voltage&quot; or &quot;current&quot;) and values of an ngspice result vector. A MOSFET drain current (<code>&quot;@m1[id]&quot;</code>) is returned as the current into the drain, with the circuit&#39;s sign convention.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L252-L258
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L252-L258
+>source</a></section></details></article><article><details class=docstring
+ open=true
+><summary id=Microelectronics.signal_phase-Tuple{Any}
+><a class=docstring-binding
+ href=#Microelectronics.signal_phase-Tuple{Any}
+><code>Microelectronics.signal_phase</code></a> — <span class=docstring-category
+>Method</span></summary><section><div><p>Phase of vector <code>name</code> in degrees.</p></div><a class=docs-sourcelink
+ target=_blank
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1895
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.simulate-Tuple{Symbol}
@@ -863,7 +894,7 @@ hello there
 >Method</span></summary><section><div><p>simulate(analysis::Symbol; args...)</p><p>Request the indicated <code>ngspice</code> analysis. Keyword arguments must be provided, depending on the analysis type.</p><p>Analysis   Keyword Argument   Description ——–   —————–  —————— <code>:tran</code>    <code>tmax</code>             Time to end the simulation            <code>tstep</code>            Maximum time-step <code>:dc</code>      <code>device</code>           Device or parameter to sweep            <code>start</code>            Initial value            <code>stop</code>             Final value            <code>step</code>             Increment between values            <code>sweep2</code>           (optional) outer sweep, a tuple                               (device, start, stop, step), for a                               family of curves <code>:ac</code>      <code>start</code>            Low frequency            <code>stop</code>             High frequency            <code>mode</code>             :lin, :dec, :oct            <code>steps</code>            Points per interval</p><p><strong>Examples</strong></p><pre><code class=language-julia-repl hljs
 >julia&gt; simulate(:ac; start=10u&quot;kHz&quot;,stop=1u&quot;MHz&quot;,steps=10)</code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1163-L1190
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1162-L1189
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.sin_string
@@ -872,7 +903,16 @@ hello there
 ><code>Microelectronics.sin_string</code></a> — <span class=docstring-category
 >Function</span></summary><section><div><p>sin_string(offset,amplitude,frequency,phase=0)</p><p>Return a SPICE string representing a sinusoidal source. Can be appended to voltage or current sources.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L656-L661
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L656-L661
+>source</a></section></details></article><article><details class=docstring
+ open=true
+><summary id=Microelectronics.source_current-Tuple{Any}
+><a class=docstring-binding
+ href=#Microelectronics.source_current-Tuple{Any}
+><code>Microelectronics.source_current</code></a> — <span class=docstring-category
+>Method</span></summary><section><div><p>Current in voltage source <code>name</code> in the latest simulation, scaled to a readable unit.</p></div><a class=docs-sourcelink
+ target=_blank
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1888
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.spice_parameters-Tuple{OrderedDict, Vararg{Any}}
@@ -892,7 +932,7 @@ julia&gt; spice_parameters(d,&quot;a&quot;)
 .param     a=1.0000e+00
 </code></pre></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L746-L768
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L746-L768
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.spice_value-Tuple{Quantity}
@@ -901,7 +941,7 @@ julia&gt; spice_parameters(d,&quot;a&quot;)
 ><code>Microelectronics.spice_value</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>spice_value(q::Quantity)</p><p>Convert a <code>Unitful</code> quantity to a stripped numerical value in preferred units. Useful to print values in SPICE netlists.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L606-L611
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L606-L611
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.sweep_curves-Tuple{Integer}
@@ -910,7 +950,7 @@ julia&gt; spice_parameters(d,&quot;a&quot;)
 ><code>Microelectronics.sweep_curves</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>sweep_curves(n)</p><p>How the <code>n</code> points of the latest analysis divide into curves. After a nested DC sweep (<code>simulate(:dc; ..., sweep2=...)</code>) there is one <code>(indices, label)</code> pair per value of the outer source, e.g. <code>(1:51, &quot;VGS = 1 V&quot;)</code>; otherwise a single pair <code>(1:n, &quot;&quot;)</code>.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Transistors.jl#L312-L319
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Transistors.jl#L312-L319
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.tran_time-Tuple{}
@@ -919,7 +959,7 @@ julia&gt; spice_parameters(d,&quot;a&quot;)
 ><code>Microelectronics.tran_time</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>tran_time()</p><p>Returns the <code>time</code> vector from NGSpice.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1313-L1317
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1312-L1316
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.°-Tuple{Quantity}
@@ -928,7 +968,7 @@ julia&gt; spice_parameters(d,&quot;a&quot;)
 ><code>Microelectronics.°</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>°(x::Quantity)</p><p>Given an angular Quantity <code>x</code>, return the representation of <code>x</code> in degrees or Hz. If <code>x</code> is given in radians or rad/s, then it is converted to degrees or Hz, respectively. If <code>x</code> has no units, then it is annotated with u&quot;°&quot; to confirm it is in degrees. If <code>x</code> has some other units that reduce to dimension s^-1, then the units are stripped and replaced with u&quot;°&quot;.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L371-L381
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L371-L381
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=RecipesBase.plot-Tuple{Spectrum}
@@ -937,7 +977,7 @@ julia&gt; spice_parameters(d,&quot;a&quot;)
 ><code>RecipesBase.plot</code></a> — <span class=docstring-category
 >Method</span></summary><section><div><p>plot(𝒮::Spectrum; nh=10, kwargs...)</p><p>Plot the magnitude spectrum in dB. By default, the horizontal scale is linear. Vertical lines are overlaid to indicate the fundamental and harmonic frequencies. The <code>nh</code> parameter controls how many harmonics are shown. Additional plot arguments are passed through to <code>Plots.plot</code> function. </p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Objects.jl#L237-L244
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Objects.jl#L237-L244
 >source</a></section></details></article><article><details class=docstring
  open=true
 ><summary id=Microelectronics.@table-Tuple
@@ -946,7 +986,7 @@ julia&gt; spice_parameters(d,&quot;a&quot;)
 ><code>Microelectronics.@table</code></a> — <span class=docstring-category
 >Macro</span></summary><section><div><p>@table(p1, p2, ...)</p><p>@table p1 p2 ...</p><p>@table(p1=val1, p2=val2, ...)  </p><p>Define a dictionary (i.e. table) of parameter names and values.</p></div><a class=docs-sourcelink
  target=_blank
- href=https://github.com/cjwinstead/Microelectronics.jl/blob/3cd16762ee5cef314c1933e465ff9ede45cf9174/src/Microelectronics.jl#L1823-L1831
+ href=https://github.com/cjwinstead/Microelectronics.jl/blob/3706856ad9c0c0f0f8485bb499eb665425c54595/src/Microelectronics.jl#L1822-L1830
 >source</a></section></details></article></article><nav class=docs-footer
 ><p class=footer-message
 >Powered by <a href=https://github.com/JuliaDocs/Documenter.jl
@@ -971,6 +1011,6 @@ julia&gt; spice_parameters(d,&quot;a&quot;)
 >catppuccin-macchiato</option><option value=catppuccin-mocha
 >catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href=https://github.com/JuliaDocs/Documenter.jl
 >Documenter.jl</a> version 1.19.0 on <span class=colophon-date
- title=Thursday 29 October 2026 19:05
+ title=Thursday 29 October 2026 21:55
 >Thursday 29 October 2026</span>. Using Julia version 1.13.3.</p></section><footer class=modal-card-foot
 ></footer></div></div></div></body></html>
