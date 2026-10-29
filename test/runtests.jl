@@ -1,5 +1,12 @@
+ENV["GKSwstype"] = "100"        # headless plotting with GR (needed on CI)
+
 using Microelectronics
 using Test
+
+be_quiet()
+
+include("transistors.jl")
+include("transistor_plots.jl")
 
 rgx=r"\s+"=>" "
 tstr(s) = strip(replace(s,rgx))

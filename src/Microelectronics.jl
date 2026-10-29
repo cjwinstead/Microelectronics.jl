@@ -861,15 +861,6 @@ end
 export subckt_instance
 
 
-function mosfet(name,drain,gate,source,substrate,model=ald1105n;
-                L=10e-6,W=20e-6,AS=0.603e-8,PS=0.478e-6,
-                AD=0.161e-8,PD=0.478e-6,NRD=0.3,NRS=1
-                )
-    s = @sprintf("M%-5s %-5s %-5s %-5s %-5s %s W=%s L=%s AD=%s AS=%s PD=%s PS=%s NRD=%s NRS=%s",name,drain,gate,source,substrate,model,qstr.((W,L,AD,AS,PD,PS,NRD,NRS))...)
-    return s
-end
-export mosfet
-
 #=
 searchfile(path,key)=filter(x->occursin(key,x),readdir(path))
     
@@ -970,6 +961,7 @@ export build_netlist
 Calls the NgHerb `load_netlist` function.
 """
 function load_netlist(n::AbstractString)
+    register_mosfets(n)                 # see Transistors.jl
     NgHerb.load_netlist(n)
 end
 export load_netlist
@@ -1182,6 +1174,9 @@ Analysis   Keyword Argument   Description
            `start`            Initial value
            `stop`             Final value
            `step`             Increment between values
+           `sweep2`           (optional) outer sweep, a tuple
+                              (device, start, stop, step), for a
+                              family of curves
 `:ac`      `start`            Low frequency
            `stop`             High frequency
            `mode`             :lin, :dec, :oct
@@ -1194,17 +1189,40 @@ julia> simulate(:ac; start=10u"kHz",stop=1u"MHz",steps=10)
 ```
 """
 function simulate(s::Symbol;args...)
+    save_mosfet_quantities()            # see Transistors.jl
     simulate(Val(s);args...)
-    #NgHerb.dumpbuffer()
 end
+
+#=
+ngspice converts names in the netlist to lowercase, and its commands only
+recognize the lowercase forms. Names given by the user (nodes, sources,
+swept devices) are therefore lowercased before being sent in a command,
+and matched against result vectors without regard to case.
+=#
+spice_name(x) = lowercase(string(x))
+
+# Name of the latest result set ("op1", "tran2", ...), or nothing if none yet.
+latest_plot() = try NgHerb.curplot() catch; nothing end
+
+"""
+   analysis_kind()
+
+Return the kind of the latest analysis as a Symbol: `:op`, `:dc`, `:ac`,
+`:tran`, `:spec` (after `fft`), or `:none` if nothing has been simulated.
+"""
+function analysis_kind()
+    pl = latest_plot()
+    isnothing(pl) ? :none : Symbol(replace(pl, r"\d+$" => ""))
+end
+export analysis_kind
 
 
 function simulate(::Val{:tran};tstep,tmax)
     transient(;tstep,tmax)
 end
 
-function simulate(::Val{:dc};device,start,stop,step)
-    dc(;device,start,stop,step)
+function simulate(::Val{:dc};device,start,stop,step,sweep2=nothing)
+    dc(;device,start,stop,step,sweep2)
 end
 
 function simulate(::Val{:ac};start,stop,mode=:dec,steps=10)
@@ -1225,8 +1243,15 @@ end
 export transient
 
 
-function dc(;device,start,stop,step)
-    s="dc $device $(qstr(start)) $(qstr(stop)) $(qstr(step))"
+"""
+   dc(; device, start, stop, step, sweep2=nothing)
+
+Run a DC sweep of `device` (a voltage or current source, or a resistor).
+With `sweep2 = (device2, start2, stop2, step2)`, the first sweep is repeated
+for each value of `device2`, giving a family of curves.
+"""
+function dc(;device,start,stop,step,sweep2=nothing)
+    s="dc $(spice_name(device)) $(qstr(start)) $(qstr(stop)) $(qstr(step))" * outer_sweep_command(sweep2)
     NgHerb.cmd(s)
 end
 export dc
@@ -1440,37 +1465,40 @@ export nodes
 
 
 
-function find_vec(s::String)
+"""
+   find_vec(name; node=true, branch=true)
+
+Return the name of the result vector for a node voltage, a source current or
+a MOSFET drain current in the latest analysis. `name` is a node name
+(`"out"`, `2`), a voltage source, whose current is the vector
+`"<name>#branch"`, or a MOSFET, whose drain current is `"@<name>[id]"`.
+Case doesn't matter. With `branch=false` only node voltages are matched;
+with `node=false` only currents. Throws an `ArgumentError` listing the
+available names if there is no match.
+"""
+function find_vec(s; node=true, branch=true)
+    name = spice_name(s)
     vecs = NgHerb.listcurvecs()
-    for x in (string(s),string("V(",s,")"),string(s,"#branch"))
-        if x ∈ vecs
-            return x
-        end
+    candidates = [(node ? [name, "v($name)"] : String[]);
+                  (branch ? ["$name#branch"; something(mosfet_current_vector(name), String[])] : String[])]
+    for candidate in candidates
+        i = findfirst(v -> lowercase(v) == candidate, vecs)
+        isnothing(i) || return vecs[i]
     end
+    shown = sort(filter(v -> !occursin(r"^(time|frequency)$|-sweep$|^@", lowercase(v)), vecs))
+    append!(shown, collect(keys(LOADED_MOSFETS)))
+    what = node && branch ? "node, source or MOSFET" : node ? "node" : "voltage source or MOSFET"
+    throw(ArgumentError("there is no $what named \"$s\" in the latest analysis " *
+                        "(:$(analysis_kind())). Available: $(join(shown, ", "))"))
 end
 
+find_vecs(args...) = [find_vec(s) for s in args]
 
-function find_vecs(args...)
-    [find_vec(string(s)) for s in args]
-end
+"True if `name` is a node voltage in the latest analysis."
+isvoltage(name::AbstractString) = signal_data(find_vec(name))[1] == "voltage"
 
-function isvoltage(name::String)
-    v = NgHerb.getvec(name)
-    if v[2] == voltage
-        return true
-    else
-        return false
-    end    
-end
-
-function iscurrent(name::String)
-    v = NgHerb.getvec(name)
-    if v[2] == voltage
-        return true
-    else
-        return false
-    end
-end
+"True if `name` is a source or MOSFET current in the latest analysis."
+iscurrent(name::AbstractString) = signal_data(find_vec(name))[1] == "current"
 
 
 """
@@ -1573,7 +1601,7 @@ function simxlabel()
     if occursin("tran",pl)
         return "Time [$(unit(tran_time()[1]))]"
     elseif occursin("dc",pl)
-        return "Sweep [$(unit(dc_sweep())[1])]"
+        return "Sweep [$(unit(dc_sweep()[1]))]"
     elseif occursin("ac",pl)
         return "Frequency [Hz]"
     end
@@ -1614,49 +1642,55 @@ julia> plot([dB"1",dB"2"];xscale=:log10,labels=["v1" "v2"])
 
 ```
         """
-function plot(names::Union{String,Number}...;args...)
-    vecs = find_vecs(names...)
-    if !isnothing(vecs)
-        labels=replace.(vecs,r"(.*)#branch"=>s"I(\1)")
-        labels=reshape(labels,(1,length(labels)))
+# Labels given by the user (label= or labels=), one per signal, and the
+# remaining plot attributes
+function split_labels(args, n)
+    given = haskey(args, :labels) ? args[:labels] : haskey(args, :label) ? args[:label] : nothing
+    rest = (; (k => v for (k, v) in pairs(args) if k ∉ (:labels, :label))...)
+    labels = isnothing(given) ? nothing :
+             given isa AbstractString ? fill(given, n) : string.(vec(collect(given)))
+    return labels, rest
+end
 
-        data = NgHerb.getvec.(vecs)
-        vsigs = [y[3] for y in data if y[2]=="voltage"]
-        isigs = [y[3] for y in data if y[2]=="current"]
-        vlabels = [y[1] for y in data if y[2]=="voltage"]
-        ilabels = [replace(y[1],r"(.*)#branch"=>s"I(\1)") for y in data if y[2]=="current"]
-        vlabels=reshape(vlabels,(1,length(vlabels)))
-        ilabels=reshape(ilabels,(1,length(ilabels)))
-        
-        if length(vsigs)>0 && length(isigs)>0
-            p=plot(simx(),vsigs; labels=vlabels,ylabel="V",args...)
-            
-            tw = twinx(p)
-            plot!(tw,simx(),isigs; labels=ilabels,ylabel="A",linestyle=:dash,args...)
-        elseif length(vsigs)>0
-            p=plot(simx(),vsigs; labels=vlabels,ylabel="V",args...)
-        elseif length(isigs)>0
-            p=plot(simx(),isigs; labels=ilabels,ylabel="A",args...)
-        else
-            return nothing
-        end
+# Plots can't draw several series whose values carry units, so for plots of
+# several curves the data are plain numbers and the units go in the labels.
+plain(v::AbstractVector{<:Quantity}, u) = ustrip.(u, v)
+plain(v, u) = v
+
+function plot(names::Union{String,Number}...;args...)
+    vecs = find_vecs(names...)              # throws if a name isn't found
+    data = [signal_data(v) for v in vecs]
+    given, rest = split_labels(args, length(vecs))
+    labels = isnothing(given) ? signal_label.(vecs) : given
+    x = plain(simx(), unit(first(simx())))  # the x label carries the unit
+    group(kind) = curve_series(x, [d[2] for d in data if d[1] == kind],
+                               [l for (l, d) in zip(labels, data) if d[1] == kind])
+    vx, vy, vl = group("voltage")
+    ix, iy, il = group("current")
+    if !isempty(vy) && !isempty(iy)
+        p = Plots.plot(vx, vy; labels=permutedims(vl), ylabel="V", xlabel=simxlabel(), rest...)
+        Plots.plot!(twinx(p), ix, iy; labels=permutedims(il), ylabel="A", linestyle=:dash, rest...)
         return p
+    elseif !isempty(vy)
+        return Plots.plot(vx, vy; labels=permutedims(vl), ylabel="V", xlabel=simxlabel(), rest...)
+    elseif !isempty(iy)
+        return Plots.plot(ix, iy; labels=permutedims(il), ylabel="A", xlabel=simxlabel(), rest...)
     else
-        return nothing
+        throw(ArgumentError("$(join(names, ", ")) are neither node voltages nor currents"))
     end
-    
 end
 
 function plot(v::Vector{Vector};args...)
-    pl=NgHerb.curplot()
-    if occursin("tran",pl)
-        t=tran_time()
-        Plots.plot(t,v;xlabel="Time [$(unit(t[1]))]",args...)
-    elseif occursin("dc",pl)
-        Plots.plot(dc_sweep(),v;args...)
-    elseif occursin("ac",pl)
-        Plots.plot(ac_freq(),v;args...)
-    end
+    x = simx()
+    length(sweep_curves(length(x))) == 1 &&           # one curve each: plot as given
+        return Plots.plot(x, identity.(v); xlabel=simxlabel(), args...)   # concrete eltype for unit handling
+    given, rest = split_labels(args, length(v))
+    labels = isnothing(given) ? ["y$i" for i in eachindex(v)] : given
+    yu = first(first(v)) isa Quantity ? unit(first(first(v))) : nothing
+    ys = [isnothing(yu) ? y : plain(y, yu) for y in v]
+    xs, ys, ls = curve_series(plain(x, unit(first(x))), ys, labels)
+    ylabel = isnothing(yu) ? "" : "[$yu]"
+    Plots.plot(xs, ys; xlabel=simxlabel(), ylabel, labels=permutedims(ls), rest...)
 end
 export plot
 
@@ -1900,7 +1934,6 @@ export @ng_str, @real_str, @imag_str, @node_str, @i_str, @magnitude_str, @dB_str
 export @table
 export @pwl_str
 
-
-
+include("Transistors.jl")
 
 end
