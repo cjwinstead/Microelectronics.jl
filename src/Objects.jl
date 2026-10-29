@@ -222,8 +222,6 @@ Instance(args...;kwargs...) = Subckt(args...;kwargs...)
 
 Opamp(name,nplus,nminus,out,model,parameters=Vector{Parameter}())=Subckt(name,(nplus,nminus,out),model,parameters)
 Opamp(;name,nplus,nminus,out,model,parameters=Vector{Parameter}())=Opamp(name,nplus,nminus,out,model,parameters)
-MOSFET(name,drain,gate,source,substrate,model,parameters=Parameter[]) = Component(;name,nodes=(drain,gate,source,substrate),model,parameters,species="mosfet",prefix="M")
-MOSFET(;name=nothing,drain,gate,source,substrate,model,parameters=Parameter[]) = MOSFET(name,drain,gate,source,substrate,model,parameters)
 
 Waveform(;wave=:dc,parameters=OrderedDict{String,Any}())=Waveform(wave,parameters)
 Waveform(s::Symbol,args...;kwargs...) = Waveform(Val(s),args...;kwargs...)
@@ -467,9 +465,7 @@ function Base.show(io::IO,::MIME"text/plain",c::Include)
 end
 
 
-function Base.getindex(instance::Component,name::String)
-    string(name[1],".",instance.name,".",name)
-end
+
 
 
 function report(io::IO,s::Source)
@@ -554,7 +550,7 @@ Base.show(io::IO,::MIME"text/plain",n::Subcircuit) = report(io,n)
 
 
 
-export Component, Waveform, Source, Resistor, Capacitor, Netlist, Inductor, Diode, Parameter, Model, Include, Subckt, Instance, Opamp, Point, MOSFET
+export Component, Waveform, Source, Resistor, Capacitor, Netlist, Inductor, Diode, Parameter, Model, Include, Subckt, Instance, Opamp, Point
 
                                       
                                     

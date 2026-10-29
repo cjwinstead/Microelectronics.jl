@@ -62,10 +62,8 @@
         @test tstr(subckt_instance(;name=1,terminals="2 3 4",model="my_subcircuit")) == "X1 2 3 4 my_subcircuit"
         @test tstr(subckt_instance(;name="U1",terminals=(2,3),model="m")) == "XU1 2 3 m"
         @test tstr(subckt_instance(;name="X5",terminals=[2,3],model="m")) == "X5 2 3 m"
-        m = tstr(mosfet("1",3,2,0,0))
-        @test startswith(m, "M1 3 2 0 0 ald1105n W=2.0e-5 L=1.0e-5")
-        @test tstr(mosfet("M1",3,2,0,0,"nmos";W=1e-6,L=1e-6)) ==
-              "M1 3 2 0 0 nmos W=1.0e-6 L=1.0e-6 AD=1.61e-9 AS=6.03e-9 PD=4.78e-7 PS=4.78e-7 NRD=0.3 NRS=1"
+        @test tstr(mosfet("1",3,2,0,0)) == "M1 3 2 0 0 ald1105n"           # sizes from the model
+        @test tstr(mosfet("M1",3,2,0,0,"nmos";W=1e-6,L=1e-6)) == "M1 3 2 0 0 nmos W=1.0e-6 L=1.0e-6"
     end
 
     @testset "String and object APIs agree" begin
@@ -97,9 +95,8 @@
                    VCCS(name="G1",nplus="3",nminus="0",control=["1","2"],gain=1u"mS"))
         @test same(dependent_source(:ccvs;name="H1",nplus=3,nminus=0,control="V1",gain=2),
                    CCVS(name="H1",nplus="3",nminus="0",control="V1",gain=2))
-        @test same(mosfet("M1",3,2,0,0,"nmos"),
-                   MOSFET("M1",3,2,0,0,"nmos",[Parameter(k,v) for (k,v) in
-                       ("W"=>20e-6,"L"=>10e-6,"AD"=>0.161e-8,"AS"=>0.603e-8,
-                        "PD"=>0.478e-6,"PS"=>0.478e-6,"NRD"=>0.3,"NRS"=>1)]))
+        @test same(mosfet("M1",3,2,0,0,"nmos"), MOSFET("M1",3,2,0,0,"nmos"))
+        @test same(mosfet("M1",3,2,0,0,"nmos";W=20e-6,L=10e-6),
+                   MOSFET("M1",3,2,0,0,"nmos",[Parameter("W",20e-6),Parameter("L",10e-6)]))
     end
 end

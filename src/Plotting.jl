@@ -41,12 +41,6 @@ function autoscale(v::AbstractVector)
     return uconvert.(units[2], v)              # all (nearly) zero
 end
 
-# ngspice vector name -> label: "out" -> "V(out)", "V(1)" -> "V(1)", "v1#branch" -> "I(v1)"
-function signal_label(vec)
-    endswith(vec, "#branch") && return "I($(vec[1:end-7]))"
-    m = match(r"^v\((.*)\)$"i, vec)
-    return isnothing(m) ? "V($vec)" : "V($(m[1]))"
-end
 
 
 #========================== signals ==========================#
@@ -60,10 +54,13 @@ analysis' independent variable. Created by [`signals`](@ref).
 - `s.kind`: the analysis, `:tran`, `:dc`, `:ac` or `:op`
 - `s.x`: time, sweep values or frequency, with units (`nothing` for `:op`)
 - `s["out"]`, `s["V1"]`, `s[1]`: one signal, with units (V or A, complex for AC)
-- `keys(s)`: the signal labels, e.g. `["V(out)", "I(v1)"]`
+- `keys(s)`: the signal labels, e.g. `["V(out)", "I(v1)", "ID(m1)"]`
+- `s.curves`: `(indices, label)` for each curve; after a nested DC sweep there
+  is one per value of the outer source (see [`sweep_curves`](@ref))
 
 With Plots loaded, `plot(s)` draws the signals against `s.x`; voltages and
-currents go on separate panels.
+currents go on separate panels, and each curve of a nested sweep is its own
+series.
 """
 struct Signals
     kind::Symbol
@@ -74,6 +71,7 @@ struct Signals
     labels::Vector{String}
     data::Vector{AbstractVector}
     voltage::Vector{Bool}
+    curves::Vector{Tuple{UnitRange{Int},String}}
 end
 
 """
@@ -82,11 +80,11 @@ end
 Collect node voltages and source currents from the latest simulation into a
 [`Signals`](@ref) object.
 
-Positional `names` can be nodes or voltage sources: each is looked up as a
-node first, then as a source current. Use the keywords to be explicit:
-`nodes` are only matched as node voltages and `branches` only as source
-currents, which matters when a node and a source share a name. Names are not
-case sensitive.
+Positional `names` can be nodes, voltage sources or MOSFETs: each is looked
+up as a node first, then as a current (a source's current, or a MOSFET's
+drain current). Use the keywords to be explicit: `nodes` are only matched as
+node voltages and `branches` only as currents, which matters when a node and
+a source share a name. Names are not case sensitive.
 
 # Examples
 
@@ -110,15 +108,16 @@ function signals(names...; nodes=(), branches=())
     isempty(requests) && throw(ArgumentError("name at least one node or voltage source"))
 
     vectors = last.(requests)
-    info = [NgHerb.getvec(v) for v in vectors]          # (name, type, data)
+    info = [signal_data(v) for v in vectors]            # (type, data)
     for (v, i) in zip(vectors, info)
-        i[2] in ("voltage", "current") ||
-            throw(ArgumentError("\"$v\" is neither a node voltage nor a source current"))
+        i[1] in ("voltage", "current") ||
+            throw(ArgumentError("\"$v\" is neither a node voltage nor a current"))
     end
-    voltage = [i[2] == "voltage" for i in info]
-    data = AbstractVector[autoscale(i[3] .* (isv ? u"V" : u"A")) for (i, isv) in zip(info, voltage)]
+    voltage = [i[1] == "voltage" for i in info]
+    data = AbstractVector[autoscale(i[2] .* (isv ? u"V" : u"A")) for (i, isv) in zip(info, voltage)]
     x, xlabel = k == :op ? (nothing, "") : (simx(), simxlabel())
-    Signals(k, x, xlabel, first.(requests), vectors, signal_label.(vectors), data, voltage)
+    curves = isnothing(x) ? [(1:1, "")] : sweep_curves(length(x))
+    Signals(k, x, xlabel, first.(requests), vectors, signal_label.(vectors), data, voltage, curves)
 end
 export signals, Signals
 
@@ -154,13 +153,13 @@ RecipesBase.@recipe function f(s::Signals)
     end
     for (panel, (quantity, idx)) in enumerate(groups)
         u = unit(first(autoscale(reduce(vcat, s.data[idx]))))   # one unit per panel
-        for i in idx
+        for i in idx, (range, curve) in s.curves
             RecipesBase.@series begin
                 subplot := panel
-                label --> s.labels[i]
+                label --> (isempty(curve) ? s.labels[i] : "$(s.labels[i]), $curve")
                 xguide --> s.xlabel
                 yguide --> "$quantity [$u]"
-                x, ustrip.(u, s.data[i])
+                x[range], ustrip.(u, s.data[i][range])
             end
         end
     end

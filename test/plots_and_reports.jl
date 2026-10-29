@@ -50,6 +50,28 @@
         @test xlims(plot(S; nh=5)) == (500.0, 5000.0)       # nh sets the x range
     end
 
+    @testset "Families of curves" begin
+        simulate_circuit(:dc; device="VDS", start=0, stop=5, step=0.5, sweep2=("VGS", 1u"V", 3u"V", 1u"V"),
+                         sources=[Vdc("VDS","d",0,0u"V"), Vdc("VGS","g",0,0u"V")],
+                         components=[NMOS("M1","d","g",0)])
+        s = signals("M1", "d")
+        @test keys(s) == ["ID(m1)", "V(d)"]
+        @test [c[2] for c in s.curves] == ["VGS = 1 V", "VGS = 2 V", "VGS = 3 V"]
+        @test length(s["M1"]) == 33
+        p = plot(signals("M1"))
+        @test [x[:label] for x in p.series_list] == ["ID(m1), VGS = 1 V", "ID(m1), VGS = 2 V", "ID(m1), VGS = 3 V"]
+        @test length(p.series_list[1][:x]) == 11
+        @test occursin("Current", p.subplots[1][:yaxis][:guide])
+        @test length(plot(s).series_list) == 6                       # 2 signals × 3 curves
+        simulate_circuit(:dc; device="VGS", start=0, stop=3, step=0.5,
+                         sources=[Vdc("VDS","d",0,5u"V"), Vdc("VGS","g",0,0u"V")],
+                         components=[NMOS("M1","d","g",0)])
+        @test length(plot(signals("M1")).series_list) == 1
+        simulate_circuit(:op; sources=[Vdc("VD","d",0,0u"V"), Vdc("VG","g",0,3u"V"), Vdc("VS","s",0,5u"V")],
+                         components=[PMOS("M2","d","g","s")])
+        @test signals("M2")["M2"][1] < 0u"A"                          # PMOS: current leaves the drain
+    end
+
     @testset "Clear errors" begin
         simulate_circuit(:ac; start=1u"Hz", stop=1u"kHz", steps=5,
                          sources=[Vac("V1",1,0)], components=[Resistor("R1",1,0,1u"kΩ")])

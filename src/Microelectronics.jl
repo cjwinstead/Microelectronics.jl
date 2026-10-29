@@ -893,22 +893,6 @@ end
 export subckt_instance
 
 
-"""
-   mosfet(name,drain,gate,source,substrate,model="ald1105n"; W, L, AD, AS, PD, PS, NRD, NRS)
-
-Return a SPICE line for a MOSFET. The geometry keywords default to values
-for the ALD1105 parts in the model library. Equivalent to
-`string(MOSFET(...))` with those geometry parameters.
-"""
-function mosfet(name,drain,gate,source,substrate,model="ald1105n";
-                L=10e-6,W=20e-6,AS=0.603e-8,PS=0.478e-6,
-                AD=0.161e-8,PD=0.478e-6,NRD=0.3,NRS=1
-                )
-    geometry = [Parameter(string(k),v) for (k,v) in pairs((;W,L,AD,AS,PD,PS,NRD,NRS))]
-    string(MOSFET(name,drain,gate,source,substrate,model,geometry))
-end
-export mosfet
-
 #=
 searchfile(path,key)=filter(x->occursin(key,x),readdir(path))
     
@@ -998,6 +982,7 @@ export build_netlist
 Calls the NgHerb `load_netlist` function.
 """
 function load_netlist(n::AbstractString)
+    register_mosfets(n)                 # see Transistors.jl
     NgHerb.load_netlist(n)
 end
 export load_netlist
@@ -1189,6 +1174,9 @@ Analysis   Keyword Argument   Description
            `start`            Initial value
            `stop`             Final value
            `step`             Increment between values
+           `sweep2`           (optional) outer sweep, a tuple
+                              (device, start, stop, step), for a
+                              family of curves
 `:ac`      `start`            Low frequency
            `stop`             High frequency
            `mode`             :lin, :dec, :oct
@@ -1201,6 +1189,7 @@ julia> simulate(:ac; start=10u"kHz",stop=1u"MHz",steps=10)
 ```
 """
 function simulate(s::Symbol;args...)
+    save_mosfet_quantities()            # see Transistors.jl
     before = latest_plot()
     simulate(Val(s);args...)
     if latest_plot() == before
@@ -1248,8 +1237,8 @@ function simulate(::Val{:tran};tstep,tmax,maxstep=nothing)
     transient(;tstep,tmax,maxstep)
 end
 
-function simulate(::Val{:dc};device,start,stop,step)
-    dc(;device,start,stop,step)
+function simulate(::Val{:dc};device,start,stop,step,sweep2=nothing)
+    dc(;device,start,stop,step,sweep2)
 end
 
 function simulate(::Val{:ac};start,stop,mode=:dec,steps=10)
@@ -1271,8 +1260,15 @@ end
 export transient
 
 
-function dc(;device,start,stop,step)
-    s="dc $(spice_name(device)) $(qstr(start)) $(qstr(stop)) $(qstr(step))"
+"""
+   dc(; device, start, stop, step, sweep2=nothing)
+
+Run a DC sweep of `device` (a voltage or current source, or a resistor).
+With `sweep2 = (device2, start2, stop2, step2)`, the first sweep is repeated
+for each value of `device2`, giving a family of curves.
+"""
+function dc(;device,start,stop,step,sweep2=nothing)
+    s="dc $(spice_name(device)) $(qstr(start)) $(qstr(stop)) $(qstr(step))" * outer_sweep_command(sweep2)
     NgHerb.cmd(s)
 end
 export dc
@@ -1509,24 +1505,28 @@ export nodes
 
 
 """
-   find_vec(name)
+   find_vec(name; node=true, branch=true)
 
-Return the name of the result vector for a node voltage or a source
-current in the latest analysis. `name` is a node name (`"out"`, `2`) or the
-name of a voltage source, whose current is the vector `"<name>#branch"`.
-Case doesn't matter. Throws an `ArgumentError` listing the available names
-if there is no match.
+Return the name of the result vector for a node voltage, a source current or
+a MOSFET drain current in the latest analysis. `name` is a node name
+(`"out"`, `2`), a voltage source, whose current is the vector
+`"<name>#branch"`, or a MOSFET, whose drain current is `"@<name>[id]"`.
+Case doesn't matter. With `branch=false` only node voltages are matched;
+with `node=false` only currents. Throws an `ArgumentError` listing the
+available names if there is no match.
 """
 function find_vec(s; node=true, branch=true)
     name = spice_name(s)
     vecs = NgHerb.listcurvecs()
-    candidates = [(node ? [name, "v($name)"] : String[]); (branch ? ["$name#branch"] : String[])]
+    candidates = [(node ? [name, "v($name)"] : String[]);
+                  (branch ? ["$name#branch"; something(mosfet_current_vector(name), String[])] : String[])]
     for candidate in candidates
         i = findfirst(v -> lowercase(v) == candidate, vecs)
         isnothing(i) || return vecs[i]
     end
-    shown = sort(filter(v -> !occursin(r"^(time|frequency)$|-sweep$", lowercase(v)), vecs))
-    what = node && branch ? "node or source" : node ? "node" : "voltage source"
+    shown = sort(filter(v -> !occursin(r"^(time|frequency)$|-sweep$|^@", lowercase(v)), vecs))
+    append!(shown, collect(keys(LOADED_MOSFETS)))
+    what = node && branch ? "node, source or MOSFET" : node ? "node" : "voltage source or MOSFET"
     throw(ArgumentError("there is no $what named \"$s\" in the latest analysis " *
                         "(:$(analysis_kind())). Available: $(join(shown, ", "))"))
 end
@@ -1534,10 +1534,10 @@ end
 find_vecs(args...) = [find_vec(s) for s in args]
 
 "True if `name` is a node voltage in the latest analysis."
-isvoltage(name::AbstractString) = NgHerb.getvec(find_vec(name))[2] == "voltage"
+isvoltage(name::AbstractString) = signal_data(find_vec(name))[1] == "voltage"
 
-"True if `name` is a source current in the latest analysis."
-iscurrent(name::AbstractString) = NgHerb.getvec(find_vec(name))[2] == "current"
+"True if `name` is a source or MOSFET current in the latest analysis."
+iscurrent(name::AbstractString) = signal_data(find_vec(name))[1] == "current"
 
 
 """
@@ -1785,6 +1785,7 @@ export @ng_str, @real_str, @imag_str, @node_str, @i_str, @magnitude_str, @dB_str
 export @table
 export @pwl_str
 
+include("Transistors.jl")
 include("Plotting.jl")
 
 end
