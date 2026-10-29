@@ -19,7 +19,7 @@ tstr(s) = strip(replace(s,rgx))
     @test dB20.([[10,20],[100,1000]]) ≈ [[20,26.0205999],[40,60]]
 
     @test rad(1u"Ω^-1*F^-1") == 1u"rad*s^-1"
-    @test rad(1u"°") ≈ 0.1096622711232151u"rad"
+    @test rad(1u"°") ≈ (π/180)*u"rad"
     @test rad(1u"Hz") ≈ 6.283185307179586u"rad*s^-1"
     @test rad(1) == 1u"rad"
     @test rad(1u"rad") == 1u"rad"
@@ -31,7 +31,7 @@ tstr(s) = strip(replace(s,rgx))
     @test Hz(1u"MHz") == 1u"MHz"
     @test Hz(1u"kHz") === 1000u"Hz"
     
-    @test °(1u"rad") ≈ 9.1189065278u"°"
+    @test °(1u"rad") ≈ (180/π)*u"°"
     @test °(1u"rad/s") ≈ 0.15915494309189535u"Hz"
     @test °(1/(1u"Ω"*1u"F")) == 1u"Hz"
     @test °(rad(1/(1u"kΩ"*1u"nF"))) ≈ 159154.94309189534u"Hz"
@@ -102,7 +102,7 @@ tstr(s) = strip(replace(s,rgx))
 
     @test tstr(pulse_string(;)) == "PULSE (0 5 1e-08 1e-08 1e-08 4.9e-07 0.001 )"
     
-    @test tstr(spice_parameters(@table a=1u"μA" bcd=23u"MΩ")) == ".param a=1.0000e-06 .param bcd=2.3000e+07"
+    @test tstr(spice_parameters(@table a=1u"μA" bcd=23u"MΩ")) == ".param a=1e-06 .param bcd=2.3e+07"
     @test tstr(subckt_instance(;name=1,terminals="2 3 4",model="my_subcircuit")) == "X1 2 3 4 my_subcircuit"
 
     parameters=[spice_parameters(@table fs=1u"krad/s")]
@@ -112,20 +112,32 @@ tstr(s) = strip(replace(s,rgx))
                 ]
     n=build_netlist(;title="test circuit",parameters,
                     sources,components)
-    @test tstr(n) == "* test circuit .param fs=159.155 V1 1 0 AC 1 SIN (0,0.005,{fs},0) R1 1 2 1000 C1 2 0 1e-06 .end"
+    @test tstr(n) == "* test circuit .include $(model_library()) .param fs=159.155 V1 1 0 AC 1 SIN (0,0.005,{fs},0) R1 1 2 1000 C1 2 0 1e-06 .end"
 
     simulate(:dc;device="v1",start=0,stop=1,step=0.5)
-    @test dc_sweep() == [0,0.5,1]
-    @test node"1"==[0,0.5,1]
-    @test i"v1"==[0.0,0.0,0.0]
+    @test dc_sweep() == [0,0.5,1]u"V"
+    @test node"1"==[0,0.5,1]u"V"
+    @test i"v1"==[0.0,0.0,0.0]u"A"
 
     simulate(:ac;start=10u"rad/s",stop=1u"Mrad/s",steps=1)
-    @test dB"2" ≈ [-0.00043427307917365363, -0.04321376857655787, -3.0103015095212604, -20.043216812838658, -40.000437378220425, -60.000007448701886]
+    @test ustrip.(dB"2") ≈ [-0.00043427307917365363, -0.04321376857655787, -3.0103015095212604, -20.043216812838658, -40.000437378220425, -60.000007448701886]
 
     @test ac_freq() ≈ [1.59155, 15.915500000000003, 159.15500000000006, 1591.5500000000009, 15915.500000000011, 159155.00000000015]
-    @test phase"2" ≈ [-0.5729389025321778, -5.710595165907326, -45.00001024345702, -84.28940889090734, -89.42706150716513, -89.94270426007239]
+    @test ustrip.(phase"2") ≈ [-0.5729389025321778, -5.710595165907326, -45.00001024345702, -84.28940889090734, -89.42706150716513, -89.94270426007239]
 
-    
-    
-    
+    # The string macros read the simulator when the code runs, not when it is
+    # parsed: inside a function and a loop, each call sees the new result.
+    vout() = node"2"[1]
+    results = map((1u"kΩ", 3u"kΩ")) do R2
+        redirect_stdout(devnull) do
+            build_netlist(; sources=[vdc("VS",1,0,1u"V")],
+                          components=[resistor("RA",1,2,1u"kΩ"), resistor("RB",2,0,R2)])
+            simulate(:op)
+        end
+        vout()
+    end
+    @test results[1] ≈ 500u"mV"
+    @test results[2] ≈ 750u"mV"
+    @test unit(i"vs"[1]) == u"μA"                       # units kept, scaled
+    @test i"vs" .|> u"mA" ≈ [-0.25u"mA"]
 end
