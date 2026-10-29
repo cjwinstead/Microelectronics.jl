@@ -6,11 +6,10 @@ using Reexport
 # Plotting is done with recipes; see Plotting.jl
 import RecipesBase
 
-# String macros (ng"", real"", imag"", i"", magnitude"", dB"", phase"", vec"")
-# come from NgHerb and are re-exported below.
+# The unitless string macros (ng"", real"", imag"", magnitude"", vec"") come
+# from NgHerb and are re-exported; node"", i"", dB"" and phase"" are below.
 import NgHerb
-using NgHerb: @ng_str, @real_str, @imag_str, @i_str, @magnitude_str,
-              @dB_str, @phase_str, @vec_str
+using NgHerb: @ng_str, @real_str, @imag_str, @magnitude_str, @vec_str
 
 import Base.show
 import Base.print
@@ -1751,31 +1750,57 @@ end
 
 
 #================ Special Strings =====================#
-# ng"", real"", imag"", i"", magnitude"", dB"", phase"" and vec"" are provided
-# by NgHerb and re-exported here. node"" is specific to Microelectronics.
+#=
+ng"", real"", imag"", magnitude"" and vec"" come from NgHerb. node"", i"",
+dB"" and phase"" are defined here because they return values with units
+(V, A, dB, °). All of them expand to function calls, so they read the
+latest simulation each time the code runs, also inside loops and functions.
+=#
 
-"""
-   node_voltage(name)
-
-Return the voltage at node `name` from the most recent simulation, as a
-Unitful vector scaled to a readable prefix (kV, V, mV, ...).
-"""
-function node_voltage(name)
-    v = NgHerb.getrealvec(string(name)) .* u"V"
-    vmax = isempty(v) ? 0u"V" : maximum(abs.(v))
-    for u in (u"kV",u"V",u"mV",u"μV",u"nV",u"pV")
-        if vmax >= 1*u
-            return uconvert.(u,v)
-        end
+# Scale a vector of quantities to the first unit in `units` (largest first)
+# that its largest magnitude reaches.
+function scaled(v, units)
+    vmax = isempty(v) ? zero(first(units)) : maximum(abs.(v))
+    for u in units
+        vmax >= 1*u && return uconvert.(u,v)
     end
     return v
 end
-export node_voltage
 
-# node"" retrieves voltage at the indicated node, relative to ground.
-# It expands to a call, so it reads the simulator each time the code runs.
+"Voltage at node `name` in the latest simulation, scaled to a readable unit."
+node_voltage(name) = scaled(NgHerb.getrealvec(string(name)) .* u"V",
+                            (u"kV",u"V",u"mV",u"μV",u"nV",u"pV"))
+
+"Current in voltage source `name` in the latest simulation, scaled to a readable unit."
+source_current(name) = scaled(NgHerb.getrealvec(string(name)*"#branch") .* u"A",
+                              (u"A",u"mA",u"μA",u"nA",u"pA"))
+
+"Magnitude of vector `name` in decibels (20 log10)."
+signal_dB(name) = 20.0 .* log10.(NgHerb.getmagnitudevec(string(name))) .* u"dB"
+
+"Phase of vector `name` in degrees."
+signal_phase(name) = (180/π) .* NgHerb.getphasevec(string(name)) .* u"°"
+
+export node_voltage, source_current, signal_dB, signal_phase
+
+# node"" retrieves the voltage at the indicated node, relative to ground
 macro node_str(s)
     :(node_voltage($s))
+end
+
+# i"" retrieves the current in the indicated voltage source
+macro i_str(s)
+    :(source_current($s))
+end
+
+# dB"" retrieves a magnitude vector and converts to dB20
+macro dB_str(s)
+    :(signal_dB($s))
+end
+
+# phase"" retrieves a phase vector and converts to degrees
+macro phase_str(s)
+    :(signal_phase($s))
 end
 
 

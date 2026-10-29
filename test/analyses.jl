@@ -11,7 +11,7 @@
         @test volts("2") ≈ [0.5]
         @test node"2" ≈ [500u"mV"]
         @test unit(node"2"[1]) == u"mV"                   # scaled for readability
-        @test i"V1" ≈ [-0.5e-3]                           # SPICE: current into the + terminal
+        @test i"V1" ≈ [-0.5e-3]u"A"                           # SPICE: current into the + terminal
         @test nodes(1,2) ≈ [[1.0],[0.5]]
 
         # a current source drives 1 mA into node 1 (from n+ through the source to n-)
@@ -25,11 +25,11 @@
                          components=[resistor("R1",1,2,1u"kΩ"), capacitor("C1",2,0,1u"μF")])
         @test dc_sweep() == [0,0.5,1]u"V"
         @test node"1" == [0,0.5,1]u"V"
-        @test i"v1" == [0.0,0.0,0.0]                      # capacitor: no DC current
+        @test i"v1" == [0.0,0.0,0.0]u"A"                      # capacitor: no DC current
 
         simulate_circuit(:dc; device="v1", start=0, stop=2, step=1, divider...)
         @test volts("2") ≈ [0.0, 0.5, 1.0]
-        @test i"v1" ≈ [0.0, -0.5e-3, -1e-3]
+        @test i"v1" ≈ [0.0, -0.5e-3, -1e-3]u"A"
 
         simulate_circuit(:dc; device="i1", start=0, stop=2e-3, step=1e-3,
                          sources=[Idc("I1",0,1,0)], components=[Resistor("R1",1,0,1u"kΩ")])
@@ -172,7 +172,7 @@
         simulate_circuit(:op; sources=loop,
                          components=[Resistor("R1",1,0,1u"kΩ"), Resistor("R2",2,0,1u"kΩ"),
                                      CCCS(name="F1",nplus="0",nminus="2",control="VS",gain=10)])
-        @test i"vs" ≈ [-1e-3]
+        @test i"vs" ≈ [-1e-3]u"A"
         @test volts("2")[1] ≈ -10
         simulate_circuit(:op; sources=loop,
                          components=[Resistor("R1",1,0,1u"kΩ"), Resistor("R2",2,0,1u"kΩ"),
@@ -185,7 +185,7 @@
                          components=[Resistor("R1",1,2,1u"kΩ"), Diode("D1",2,0,"D1N914")])
         vd = volts("2")[1]
         @test 0.5 < vd < 1.0                               # forward biased: conducts
-        @test i"V1"[1] ≈ -(5 - vd)/1e3 rtol=1e-6           # KVL around the loop
+        @test i"V1"[1] ≈ -(5 - vd)/1e3*u"A" rtol=1e-6           # KVL around the loop
 
         simulate_circuit(:op; sources=[Vdc("V1",1,0,5u"V")],
                          components=[Resistor("R1",1,2,1u"kΩ"), Diode("D1",0,2,"D1N914")])
@@ -211,7 +211,7 @@
             @test volts(n) ≈ [0.5]
             @test Microelectronics.find_vec(n) == "out"
         end
-        @test i"VIN" ≈ i"vin" ≈ [-0.5e-3]
+        @test i"VIN" ≈ i"vin" ≈ [-0.5e-3]u"A"
         @test Microelectronics.find_vec("VIN") == "vin#branch"
         @test volts("FOUT") ≈ [5.0]                        # CCCS control "VSENSE" finds Vsense
         @test isvoltage("OUT") && !iscurrent("OUT")
@@ -302,6 +302,10 @@
         quietly(() -> ng"op")                              # ng"" sends a command
         @test node"2"[1] ≈ 750u"mV"
         @test vec"2"[3] ≈ [0.75]
+        # unitless macros come from NgHerb; node"", i"", dB"", phase"" carry units
+        @test unit(node"2"[1]) == u"mV" && unit(i"VS"[1]) == u"μA"
+        @test i"VS" .|> u"mA" ≈ [-0.25u"mA"]
+        @test real"2" ≈ [0.75]
         @test_throws Exception node"no_such_node"
     end
 
