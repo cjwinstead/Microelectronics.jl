@@ -945,7 +945,9 @@ Construct a `Netlist`, load it into ngspice, and return its text:
 ```
 
 The title can be given positionally, `build_netlist("My circuit"; ...)`, or
-as the `title` keyword. The other keywords accept element objects
+as the `title` keyword. `globals` names nets shared by the whole circuit,
+including inside subcircuit definitions, e.g. `globals=["vdd"]` writes
+`.global vdd`. The other keywords accept element objects
 (`Resistor`, `Vsin`, ...), Strings from the string-returning functions
 (`resistor`, `vsin`, ...), raw SPICE text, `@table` dictionaries (for
 parameters), or vectors mixing any of these. All arguments are optional.
@@ -964,8 +966,8 @@ R2    2     0     1000
 .end
 ```
 """
-function build_netlist(s=nothing;title=something(s,"circuit"),parameters="",models="",sources="",components="")
-    n = Netlist(;title,parameters,models,sources,components)
+function build_netlist(s=nothing;title=something(s,"circuit"),parameters="",models="",sources="",components="",globals=String[])
+    n = Netlist(;title,parameters,models,sources,components,globals)
     netlist = string(n)
     load_netlist(netlist)
     netlist
