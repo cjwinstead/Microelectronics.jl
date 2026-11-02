@@ -7,6 +7,7 @@ be_quiet()
 
 include("transistors.jl")
 include("transistor_plots.jl")
+include("globals.jl")
 
 rgx=r"\s+"=>" "
 tstr(s) = strip(replace(s,rgx))

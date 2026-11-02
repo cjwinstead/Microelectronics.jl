@@ -109,7 +109,27 @@ struct Netlist
     parameters::Vector{Parameter}
     sources::Vector{Source}
     components::Vector{Element}
+    globals::Vector{String}
 end
+
+#=
+Global nets (.global): nodes such as vdd that are shared by the whole
+circuit, including inside subcircuit definitions, without being passed in
+as subcircuit terminals. Ground (node 0) is always global.
+=#
+function global_names(g)
+    names = g isa Union{AbstractString,Symbol,Integer} ? [g] : collect(something(g, String[]))
+    out = String[]
+    for n in names
+        n isa Quantity && throw(ArgumentError("a global net name can't be a quantity ($n)"))
+        s = string(n)
+        (s == "0" || s in out) || push!(out, s)
+    end
+    return out
+end
+
+# ".global vdd vss", or nothing when there are no global nets
+global_line(globals) = isempty(globals) ? nothing : ".global " * join(globals, " ")
 
 
 #=
@@ -127,7 +147,16 @@ end
 
 export Subcircuit,Element,CCCS,VCVS,VCCS,CCVS
 
-Netlist(;title="cicuit",models=Vector{Model}(),includes=Vector{Include}([Include(realpath(dirname(pathof(@__MODULE__))*"/../model_library.sp"))]),parameters=Vector{Parameter}(),sources=Vector{Source}(),components=Vector{Component}())=Netlist(title,models,includes,parameters,sources,components)
+"""
+   Netlist(; title, models, includes, parameters, sources, components, globals)
+
+A circuit. `globals` names nets shared by the whole circuit, including
+inside subcircuit definitions, e.g. `globals=["vdd"]` writes `.global vdd`.
+"""
+Netlist(;title="cicuit",models=Vector{Model}(),includes=Vector{Include}([Include(realpath(dirname(pathof(@__MODULE__))*"/../model_library.sp"))]),parameters=Vector{Parameter}(),sources=Vector{Source}(),components=Vector{Component}(),globals=String[])=Netlist(title,models,includes,parameters,sources,components,global_names(globals))
+
+# netlists made without global nets
+Netlist(title,models,includes,parameters,sources,components) = Netlist(title,models,includes,parameters,sources,components,String[])
         
 load_netlist(n::Netlist) = load_netlist(string(n))
 export load_netlist
@@ -401,6 +430,7 @@ end
 
 function Base.print(io::IO,n::Netlist)
     println(io,"* ", n.title)
+    isempty(n.globals) || println(io, global_line(n.globals))
     for field in [:models,:includes,:parameters,:sources,:components]
         v = getfield(n,field)
         for x in v
@@ -467,7 +497,7 @@ report(v::Vector{T} where T<:Element) = report(stdout,v)
 
     
 function report(io,n::Netlist)
-    for field in (:title, :models, :includes, :parameters, :sources, :components)
+    for field in (:title, :globals, :models, :includes, :parameters, :sources, :components)
         println(io,'-'^40)
         print(io,string(field))
         f = getfield(n,field)
