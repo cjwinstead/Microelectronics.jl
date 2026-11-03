@@ -23,9 +23,9 @@ end
 
 function scale_resistor(r::Quantity)
     res = uconvert(u"Ω",r)
-    if r >= 1u"MΩ"
+    if abs(r) >= 1u"MΩ"
         return uconvert(u"MΩ",r)
-    elseif r >= 1u"kΩ"
+    elseif abs(r) >= 1u"kΩ"
         return uconvert(u"kΩ",r)
     else
         return r
@@ -34,15 +34,15 @@ end
 
 
 function scale_Hz(f::Quantity)
-    if f >= 1u"GHz"
+    if abs(f) >= 1u"GHz"
         return uconvert(u"GHz", f)
-    elseif f >= 1u"MHz"
+    elseif abs(f) >= 1u"MHz"
         return uconvert(u"MHz", f)
-    elseif f >= 1u"kHz"
+    elseif abs(f) >= 1u"kHz"
         return uconvert(u"kHz", f)
-    elseif f >= 1u"Hz"
+    elseif abs(f) >= 1u"Hz"
         return uconvert(u"Hz", f)
-    elseif f >= 1u"mHz"
+    elseif abs(f) >= 1u"mHz"
         return uconvert(u"mHz", f)
     end
 
@@ -50,17 +50,17 @@ function scale_Hz(f::Quantity)
 end
 
 function scale_s(s::Quantity)
-    if s >= 1u"s"
+    if abs(s) >= 1u"s"
         return uconvert(u"s", s)
-    elseif s >= 1u"ms"
+    elseif abs(s) >= 1u"ms"
         return uconvert(u"ms", s)
-    elseif s >= 1u"μs"
+    elseif abs(s) >= 1u"μs"
         return uconvert(u"μs", s)
-    elseif s >= 1u"ns"
+    elseif abs(s) >= 1u"ns"
         return uconvert(u"ns", s)
-    elseif s >= 1u"ps"
+    elseif abs(s) >= 1u"ps"
         return uconvert(u"ps", s)
-    elseif s >= 1u"fs"
+    elseif abs(s) >= 1u"fs"
         return uconvert(u"fs", s)
     end
 
@@ -68,15 +68,15 @@ function scale_s(s::Quantity)
 end
 
 function scale_rad(f::Quantity)
-    if f >= 1u"Grad/s"
+    if abs(f) >= 1u"Grad/s"
         return uconvert(u"Grad/s", f)
-    elseif f >= 1u"Mrad/s"
+    elseif abs(f) >= 1u"Mrad/s"
         return uconvert(u"Mrad/s", f)
-    elseif f >= 1u"krad/s"
+    elseif abs(f) >= 1u"krad/s"
         return uconvert(u"krad/s", f)
-    elseif f >= 1u"rad/s"
+    elseif abs(f) >= 1u"rad/s"
         return uconvert(u"rad/s", f)
-    elseif f >= 1u"mrad/s"
+    elseif abs(f) >= 1u"mrad/s"
         return uconvert(u"mrad/s", f)
     end
 
@@ -86,13 +86,13 @@ end
 
 
 function scale_capacitor(c::Quantity)
-    if c >= 1u"μF"
+    if abs(c) >= 1u"μF"
         return uconvert(u"μF", c)
-    elseif c >= 1u"nF"
+    elseif abs(c) >= 1u"nF"
         return uconvert(u"nF", c)
-    elseif c >= 1u"pF"
+    elseif abs(c) >= 1u"pF"
         return uconvert(u"pF", c)
-    elseif c >= 1u"fF"
+    elseif abs(c) >= 1u"fF"
         return uconvert(u"fF", c)
     else
         return c
@@ -101,21 +101,21 @@ end
 
 
 function scale_current(i::Quantity)
-    if i >= 1u"MA"
+    if abs(i) >= 1u"MA"
         return uconvert(u"MA", i)
-    elseif i >= 1u"kA"
+    elseif abs(i) >= 1u"kA"
         return uconvert(u"kA", i)
-    elseif i >= 1u"A"
+    elseif abs(i) >= 1u"A"
         return uconvert(u"A", i)
-    elseif i >= 1u"mA"
+    elseif abs(i) >= 1u"mA"
         return uconvert(u"mA", i)
-    elseif i >= 1u"μA"
+    elseif abs(i) >= 1u"μA"
         return uconvert(u"μA", i)
-    elseif i >= 1u"nA"
+    elseif abs(i) >= 1u"nA"
         return uconvert(u"nA", i)
-    elseif i >= 1u"pA"
+    elseif abs(i) >= 1u"pA"
         return uconvert(u"pA", i)
-    elseif i >= 1u"fA"
+    elseif abs(i) >= 1u"fA"
         return uconvert(u"fA", i)
     else
         return i
@@ -123,21 +123,21 @@ function scale_current(i::Quantity)
 end
 
 function scale_voltage(v::Quantity)
-    if v >= 1u"MV"
+    if abs(v) >= 1u"MV"
         return uconvert(u"MV", v)
-    elseif v >= 1u"kV"
+    elseif abs(v) >= 1u"kV"
         return uconvert(u"kV", v)
-    elseif v >= 1u"V"
+    elseif abs(v) >= 1u"V"
         return uconvert(u"V", v)
-    elseif v >= 1u"mV"
+    elseif abs(v) >= 1u"mV"
         return uconvert(u"mV", v)
-    elseif v >= 1u"μV"
+    elseif abs(v) >= 1u"μV"
         return uconvert(u"μV", v)
-    elseif v >= 1u"nV"
+    elseif abs(v) >= 1u"nV"
         return uconvert(u"nV", v)
-    elseif v >= 1u"pV"
+    elseif abs(v) >= 1u"pV"
         return uconvert(u"pV", v)
-    elseif v >= 1u"fV"
+    elseif abs(v) >= 1u"fV"
         return uconvert(u"fV", v)
     else
         return v
@@ -146,13 +146,13 @@ end
 
 
 function scale_transconductance(g::Quantity)
-    if g >= 1u"A/V"
+    if abs(g) >= 1u"A/V"
         return uconvert(u"A/V", g)
-    elseif g >= 1u"mA/V"
+    elseif abs(g) >= 1u"mA/V"
         return uconvert(u"mA/V", g)
-    elseif g >= 1u"μA/V"
+    elseif abs(g) >= 1u"μA/V"
         return uconvert(u"μA/V", g)
-    elseif g >= 1u"nA/V"
+    elseif abs(g) >= 1u"nA/V"
         return uconvert(u"nA/V", g)
     end
     
@@ -464,6 +464,28 @@ function report(s::String)
 end
 
 
+"Significant digits shown by report()."
+const REPORT_DIGITS = 4
+
+# A number with at most REPORT_DIGITS significant digits: 0.6667, 159.2, 1.5e+07
+report_number(x::Bool) = string(x)
+report_number(x::Real) = @sprintf("%.*g", REPORT_DIGITS, float(x))
+report_number(x::Complex) = report_number(real(x)) * (imag(x) < 0 ? " - " : " + ") *
+                            report_number(abs(imag(x))) * "im"
+
+# Value and unit text for one row of a report() table. Quantities get a
+# readable prefix (4.7 mA); a combination of units with no prefix rule, such
+# as kΩ^-1 μF^-1, is first reduced to SI units (s^-1).
+function report_cell(val)
+    val isa Quantity || return (val isa Number ? report_number(val) : string(val)), ""
+    x = scale_quantity(val)
+    if unit(x) == unit(val) && occursin(r"[ ^]", string(unit(val)))
+        x = scale_quantity(upreferred(val))
+    end
+    return report_number(ustrip(x)), string(unit(x))
+end
+
+
 """
    function report(io::IO=stdout,p::OrderedDict)
 
@@ -491,13 +513,8 @@ function report(io::IO,p::OrderedDict)
     print(io,"| Parameter  |  Value        | Unit        |\n")
     print(io,"|------------|---------------|-------------|\n")
     for k in keys(p)
-        val=p[k]
-        if typeof(val)<:Quantity
-            x = scale_quantity(val)
-            print(io,@sprintf("|%-12s|%15g|%13s|\n",k,ustrip(x),unit(x)))
-        else
-            print(io,@sprintf("|%-12s|%15s|%13s|\n",k,p[k]," "))
-        end
+        value, unit_text = report_cell(p[k])
+        print(io,@sprintf("|%-12s|%15s|%13s|\n",k,value,unit_text))
     end
 end
 

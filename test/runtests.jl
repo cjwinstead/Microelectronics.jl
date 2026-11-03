@@ -64,4 +64,5 @@ throws(T, f) = try f(); false catch e; e isa T end
     include("plots_and_reports.jl")
     include("transistors.jl")
     include("globals.jl")
+    include("reports.jl")
 end

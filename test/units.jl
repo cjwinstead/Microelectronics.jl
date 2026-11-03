@@ -95,9 +95,9 @@
         @test scaled(scale_quantity(5e-12u"F"))   == (5, u"pF")
         @test scale_quantity(1u"kg") == 1u"kg"    # no rule: returned unchanged
 
-        # Known bug: negative values are never rescaled (comparisons use x, not |x|)
-        @test_broken unit(scale_quantity(-0.0047u"A")) == u"mA"
-        @test_broken unit(scale_quantity(-3.3e-3u"V")) == u"mV"
+        # negative values get a prefix too
+        @test unit(scale_quantity(-0.0047u"A")) == u"mA"
+        @test unit(scale_quantity(-3.3e-3u"V")) == u"mV"
     end
 
     @testset "Quantity predicates" begin
