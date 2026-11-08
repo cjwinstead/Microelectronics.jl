@@ -354,8 +354,9 @@ An instance (`X...`) of the subcircuit `model`, e.g. one defined with
 `parameters` override the subcircuit's defaults, in any of the forms
 [`parameter_list`](@ref) accepts:
 
-```julia-repl
+```jldoctest
 julia> Subckt("X1", [1, 2], "divider", (R=2u"kΩ",))
+X1    1     2     divider R=2000
 ```
 """
 Subckt(name,nodes,model::AbstractString,parameters=Vector{Parameter}())=Component(;name,prefix="X",nodes,model,parameters)

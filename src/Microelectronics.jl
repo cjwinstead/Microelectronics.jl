@@ -278,7 +278,7 @@ Numbers.
 
 # Examples
 
-```julia-repl
+```jldoctest
 julia> dB20(1000)
 60.0
 
@@ -443,7 +443,7 @@ the width of the text in `s`.
 
 # Example
 
-```julia-repl
+```jldoctest
 julia> report("hello there")
 -----------
 hello there
@@ -493,7 +493,7 @@ A table of parameter names and values, as made by [`@table`](@ref). It is an
 ordered dictionary from names (`String`) to values: entries keep the order
 they were given in, and it works like any `AbstractDict`:
 
-```julia-repl
+```jldoctest
 julia> t = @table R=1u"kΩ" C=1u"μF";
 
 julia> t["R"]
@@ -547,7 +547,7 @@ Print the table `p` (e.g. from [`@table`](@ref)) in Markdown format on `io`.
 
 # Examples
 
-```julia-repl
+```jldoctest
 julia> report(stdout,(A=1u"ms",B=1u"V"))
 | Parameter  |  Value        | Unit        |
 |------------|---------------|-------------|
@@ -573,9 +573,9 @@ function report(io::IO,p::AbstractDict)
 end
 
 
-function report(n::NamedTuple)
-    report(ParameterTable(OrderedDict{String,Any}(string(k) => v for (k, v) in pairs(n))))
-end
+report(io::IO, n::NamedTuple) =
+    report(io, ParameterTable(OrderedDict{String,Any}(string(k) => v for (k, v) in pairs(n))))
+report(n::NamedTuple) = report(stdout, n)
 
 
 report(p::AbstractDict)=report(stdout,p)
@@ -655,12 +655,12 @@ SPICE prefix `d`. The prefix can be a String, Char, Symbol, or
 other type that can be converted to a single-character String.
 
 # Examples
-```julia-repl
+```jldoctest
 julia> device_species("R")
 :resistor
 ```
 
-```julia-repl
+```jldoctest
 julia> device_species(:C)
 :capacitor
 ```
@@ -712,7 +712,7 @@ returned.
 
 # Examples
 
-```julia-repl
+```jldoctest
 julia> qstr(:Rval)
 "{Rval}"
 
@@ -720,7 +720,7 @@ julia> qstr("1k")
 "1k"
 
 julia> qstr(1u"nF")
-"1e-9"
+"1e-09"
 ```
 """
 function qstr(q)
@@ -769,7 +769,7 @@ written to the PHASE field of ngspice's `SIN(VO VA FREQ TD THETA PHASE)`.
 
 # Examples
 
-```julia-repl
+```jldoctest
 julia> sin_string(0u"V", 1u"V", 1u"kHz")
 " SIN (0,1,1000,0) "
 
@@ -801,10 +801,9 @@ same units for each point.
 
 # Examples
 
-```julia-repl
-julia> points=Vector{Tuple{Number,Number}}()
-julia> push!(points,(0,0))
-julia> push!(points,(1u"ms",2u"mV"))
+```jldoctest
+julia> points = [(0, 0), (1u"ms", 2u"mV")];
+
 julia> pwl_string(points)
 "PWL ( 0 0 0.001 0.002)"
 ```
@@ -842,16 +841,17 @@ export pulse_string
 
 
 """
-   next_name(d::String)
+   nextname(prefix)
 
-Increments the counter for instance of device species `d`, and
-returns a SPICE device name.
+Increment the counter for device prefix `prefix` and return the next
+automatic device name. Used when an element is created without a name.
 
 # Examples
-```julia-repl
-julia> next_name("R")
+```jldoctest; setup = :(empty!(Microelectronics.counts))
+julia> Microelectronics.nextname("R")
 "R1"
-julia> next_name("R")
+
+julia> Microelectronics.nextname("R")
 "R2"
 ```
 """
@@ -865,6 +865,9 @@ function nextname(s)
 end
 
 
+# One `.param` line; used by spice_parameters and by Netlist printing.
+param_line(name,value) = @sprintf(".param %5s=%s",name,qstr(value))
+
 """
 spice_parameters(p::AbstractDict,[keys...])
 spice_parameters(v::Vector{Parameter})
@@ -875,23 +878,17 @@ then lines are output only for the specified keys.
 
 # Examples
 
-```julia-repl
+```jldoctest
 julia> d = @table a=1u"V"  b=4u"ms";
 
 julia> spice_parameters(d)
 .param     a=1
 .param     b=0.004
 
-
-
 julia> spice_parameters(d,"a")
 .param     a=1
-
 ```
 """
-# One `.param` line; used by spice_parameters and by Netlist printing.
-param_line(name,value) = @sprintf(".param %5s=%s",name,qstr(value))
-
 function spice_parameters(p::AbstractDict,vars...)
     SpiceText(join(param_line(var,p[var])*"\n" for var in vars))
 end
@@ -917,12 +914,12 @@ or model name.
 
 # Examples
 
-```julia-repl
-julia> bipole(:d, 2, 1, "D1N4004")
-"D1    2    1   1N4004"
+```jldoctest; setup = :(empty!(Microelectronics.counts))
+julia> bipole(:d, 2, 1, "1N4004")
+D1    2     1     1N4004
 
 julia> bipole(:C, 2, 3, 1u"nF")
-"C1    2    3   1e-9" 
+C1    2     3     1e-09
 ```
 """
 function bipole(species,nplus,nminus,value)
@@ -945,12 +942,12 @@ it is inserted.
 
 # Examples
 
-```julia-repl
+```jldoctest; setup = :(empty!(Microelectronics.counts))
 julia> bipole(:d, "d1", 2, 1, "1N4004")
-"D1    2    1   1N4004"
+d1    2     1     1N4004
 
 julia> bipole(:C, 1, 2, 3, 1u"nF")
-"C1    2    3   1e-9" 
+C1    2     3     1e-09
 ```
 """
 function bipole(species,name,nplus,nminus,value)
@@ -1090,9 +1087,9 @@ like the power rails, slew rate, current limit, etc.
 
 # Example
 
-```julia-repl
+```jldoctest
 julia> opamp(;name="OA1", nplus=0, nminus=2, out=3, model="my_opamp")
-XOA1   0     2     3     my_opamp
+XOA1  0     2     3     my_opamp
 ```
 """
 function opamp(;name,nplus,nminus,out,model="ideal_opamp")
@@ -1471,10 +1468,10 @@ No. of Data Rows : 3
 0
 
 julia> dc_sweep()
-3-element Vector{Float64}:
- 0.0
- 0.5
- 1.0
+3-element Vector{Quantity{Float64, 𝐋^2 𝐌 𝐈^-1 𝐓^-3, Unitful.FreeUnits{(V,), 𝐋^2 𝐌 𝐈^-1 𝐓^-3, nothing}}}:
+ 0.0 V
+ 0.5 V
+ 1.0 V
 
 ```
 """
@@ -1527,12 +1524,12 @@ No. of Data Rows : 7
 julia> ac_freq()
 7-element Vector{Float64}:
  10.0
- 12.589254117941673
- 15.848931924611136
- 19.952623149688797
- 25.118864315095806
- 31.6227766016838
- 39.810717055349734
+ 13.076604860118305
+ 17.09975946676697
+ 22.360679774997894
+ 29.240177382128657
+ 38.23622456658649
+ 49.99999999999999
 
 ```
 """
