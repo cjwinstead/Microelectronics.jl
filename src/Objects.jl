@@ -162,7 +162,7 @@ export Subcircuit,Element,CCCS,VCVS,VCCS,CCVS,SpiceLine
 
 #=
 Netlist contents can be given as objects, Strings (from the string API),
-OrderedDicts (from @table), or nested vectors of these. netlist_items
+dictionaries (from @table), or nested vectors of these. netlist_items
 flattens all of that into a list of objects.
 =#
 netlist_items(x) = Any[x]
@@ -221,7 +221,7 @@ with_prefix(p,name) = (n = string(name); uppercase(first(n,1)) == uppercase(p) ?
 # Use the given name, or generate the next one (R1, R2, ...) if none is given.
 element_name(prefix,name) = (isnothing(name) || name == "") ? nextname(prefix) : string(name)
 
-Base.convert(::Type{Vector{Parameter}},d::OrderedDict) = Parameter(d)
+Base.convert(::Type{Vector{Parameter}},d::AbstractDict) = Parameter(d)
 
 
 function fixname!(c::Component)
@@ -410,7 +410,8 @@ function Base.print(io::IO,w::Waveform)
 end
 
 function report(io::IO,w::Waveform)
-    print(io,string(w.wave," waveform with parameters: \n",w.parameters))
+    println(io,w.wave," waveform with parameters:")
+    w.parameters isa AbstractDict ? report(io,w.parameters) : print(io,w.parameters)
     return nothing
 end
 report(w::Waveform) = report(stdout,w)

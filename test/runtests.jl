@@ -66,4 +66,5 @@ throws(T, f) = try f(); false catch e; e isa T end
     include("globals.jl")
     include("reports.jl")
     include("spice_text.jl")
+    include("parameter_table.jl")
 end

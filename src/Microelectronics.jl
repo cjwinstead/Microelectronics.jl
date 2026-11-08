@@ -487,14 +487,68 @@ end
 
 
 """
-   function report(io::IO=stdout,p::OrderedDict)
+   ParameterTable
 
-Print the table `p` in Markdown format on `io`.
+A table of parameter names and values, as made by [`@table`](@ref). It is an
+ordered dictionary from names (`String`) to values: entries keep the order
+they were given in, and it works like any `AbstractDict`:
+
+```julia-repl
+julia> t = @table R=1u"kΩ" C=1u"μF";
+
+julia> t["R"]
+1 kΩ
+
+julia> t["fc"] = Hz(1/(t["R"]*t["C"]));
+
+julia> collect(keys(t))
+3-element Vector{String}:
+ "R"
+ "C"
+ "fc"
+```
+
+It is displayed, printed and interpolated as a [`report`](@ref) table;
+`repr` gives `ParameterTable("R" => 1 kΩ, ...)`.
+"""
+struct ParameterTable <: AbstractDict{String,Any}
+    dict::OrderedDict{String,Any}
+    ParameterTable(d::OrderedDict{String,Any}) = new(d)
+end
+ParameterTable(ps::Pair...) = ParameterTable(OrderedDict{String,Any}(string(k) => v for (k, v) in ps))
+ParameterTable(d::AbstractDict) = ParameterTable(OrderedDict{String,Any}(string(k) => v for (k, v) in d))
+export ParameterTable
+
+Base.length(t::ParameterTable) = length(t.dict)
+Base.iterate(t::ParameterTable, s...) = iterate(t.dict, s...)
+Base.getindex(t::ParameterTable, k::AbstractString) = t.dict[k]
+Base.get(t::ParameterTable, k, default) = get(t.dict, k, default)
+Base.get(f::Base.Callable, t::ParameterTable, k) = get(f, t.dict, k)
+Base.haskey(t::ParameterTable, k) = haskey(t.dict, k)
+Base.keys(t::ParameterTable) = keys(t.dict)
+Base.values(t::ParameterTable) = values(t.dict)
+Base.setindex!(t::ParameterTable, v, k::AbstractString) = (t.dict[k] = v; t)
+Base.delete!(t::ParameterTable, k) = (delete!(t.dict, k); t)
+Base.empty!(t::ParameterTable) = (empty!(t.dict); t)
+Base.copy(t::ParameterTable) = ParameterTable(copy(t.dict))
+Base.empty(::ParameterTable) = ParameterTable()
+
+# A parameter table is shown and printed as a report table, so that
+# `@table R C` in a notebook, `print(t)` and "$t" all give the table.
+Base.show(io::IO, ::MIME"text/plain", t::ParameterTable) = report(io, t)
+Base.print(io::IO, t::ParameterTable) = report(io, t)
+
+
+"""
+   report(io::IO=stdout, p::AbstractDict)
+   report(p::NamedTuple)
+
+Print the table `p` (e.g. from [`@table`](@ref)) in Markdown format on `io`.
 
 # Examples
 
 ```julia-repl
-julia> report(stdout,OrderedDict("A"=>1u"ms","B"=>1u"V"))
+julia> report(stdout,(A=1u"ms",B=1u"V"))
 | Parameter  |  Value        | Unit        |
 |------------|---------------|-------------|
 |A           |              1|           ms|
@@ -509,7 +563,7 @@ julia> report(@table A=1u"ms" B=1u"V")
 
 ```
 """
-function report(io::IO,p::OrderedDict)
+function report(io::IO,p::AbstractDict)
     print(io,"| Parameter  |  Value        | Unit        |\n")
     print(io,"|------------|---------------|-------------|\n")
     for k in keys(p)
@@ -520,15 +574,11 @@ end
 
 
 function report(n::NamedTuple)
-    d = OrderedDict{String,Any}()
-    for k in keys(n)
-        d[string(k)] = n[k]
-    end
-    report(d)
+    report(ParameterTable(OrderedDict{String,Any}(string(k) => v for (k, v) in pairs(n))))
 end
 
 
-report(p::OrderedDict)=report(stdout,p)
+report(p::AbstractDict)=report(stdout,p)
 export report
 
 """
@@ -589,33 +639,6 @@ function print_lines(io::IO, x)
 end
 
 
-"""
-   Base.show(io::IO,d::OrderedDict}
-
-Print the elements of `d` line-by-line, one line for
-each element.
-
-# Example
-
-```julia-repl
-julia> d=OrderedDict(:a=>"foo",:b=>"bar")
-:a => foo
-:b => bar
-
-```
-"""
-function Base.show(io::IO,::MIME"text/plain",d::OrderedDict)
-    report(io,d)
-end
-
-
-function Base.print(io::IO,d::OrderedDict)
-    report(io,d)
-end
-
-function Base.print(d::OrderedDict)
-    report(stdout,d)
-end
 
 
 
@@ -832,7 +855,7 @@ end
 
 
 """
-spice_parameters(p::OrderedDict,[keys...])
+spice_parameters(p::AbstractDict,[keys...])
 spice_parameters(v::Vector{Parameter})
 
 Return a String of SPICE parameter declarations using entries
@@ -1755,10 +1778,12 @@ export measure
 
    @table(p1=val1, p2=val2, ...)  
 
- Define a dictionary (i.e. table) of parameter names and values.
+ Define a table of parameter names and values, a [`ParameterTable`](@ref).
+ Names are taken from variables or from the left of `=`; the table keeps
+ their order and is displayed as a [`report`](@ref) table.
 """
 macro table(vars...)
-    expr = Expr(:call, :OrderedDict)
+    expr = Expr(:call, :ParameterTable)
     for var in vars
         q=eval(:($(QuoteNode(var))))
         t=typeof(q)
