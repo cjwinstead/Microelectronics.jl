@@ -26,9 +26,7 @@ function terminal_name(x)
 end
 
 function mosfet_parameters(parameters, kw)
-    params = Parameter[p isa Parameter ? p :
-                       p isa Pair ? Parameter(string(p.first), p.second) : Parameter(p)
-                       for p in parameters]
+    params = parameter_items(parameters)        # a new vector, so it can be extended
     for (k, v) in pairs(kw)
         key = uppercase(string(k))
         key in MOSFET_INSTANCE_PARAMETERS || throw(ArgumentError(

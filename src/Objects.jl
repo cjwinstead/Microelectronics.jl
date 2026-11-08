@@ -106,12 +106,26 @@ end
 
 
 
-@kwdef struct Subcircuit
+"""
+   Subcircuit(; name, terminals, parameters=[], components=[])
+
+A subcircuit definition (`.subckt name terminals ... .ends`), to list among
+a `Netlist`'s `models` and use with [`Subckt`](@ref). Terminals are node
+names (strings, symbols or integers). `parameters` are defaults that each
+instance may override, in any of the forms [`parameter_list`](@ref) accepts.
+`components` are taken in the same forms as a `Netlist`'s.
+"""
+struct Subcircuit
     name::String
     terminals::Vector{String}
-    parameters::Vector{Parameter}=[]
+    parameters::Vector{Parameter}
     components::Vector{Element}
+    Subcircuit(name, terminals, parameters, components) =
+        new(string(name), node_names(terminals isa Union{AbstractVector,Tuple} ? terminals : [terminals]),
+            parameter_list(parameters), netlist_items(components))
 end
+Subcircuit(; name, terminals, parameters=Parameter[], components=Element[]) =
+    Subcircuit(name, terminals, parameters, components)
     
 
 
@@ -169,8 +183,14 @@ netlist_items(x) = Any[x]
 netlist_items(::Nothing) = Any[]
 netlist_items(x::AbstractString) = isempty(strip(x)) ? Any[] : Any[SpiceLine(x)]
 netlist_items(x::AbstractVector) = reduce(vcat, map(netlist_items,x); init=Any[])
-netlist_items(x::AbstractDict) = Any[Parameter(x)...]
-netlist_items(x::Union{Tuple,Pair}) = Any[Parameter(x)]
+netlist_items(x::Tuple) = netlist_items(collect(x))
+
+# A netlist's parameters: .param text, or parameters in any form parameter_list takes
+netlist_parameters(x::AbstractString) = netlist_items(x)
+netlist_parameters(x::AbstractVector) = reduce(vcat, map(netlist_parameters, x); init=Any[])
+netlist_parameters(x::Tuple) = is_name_value(x) ? Any[parameter_items(x)...] :
+                               reduce(vcat, map(netlist_parameters, x); init=Any[])
+netlist_parameters(x) = Any[parameter_items(x)...]
 
 """
    Netlist(; title, models, includes, parameters, sources, components, globals)
@@ -182,13 +202,12 @@ function Netlist(;title="circuit",models=[],includes=[Include(model_library())],
                  parameters=[],sources=[],components=[],globals=String[])
     includes = [x isa Include ? x : Include(string(x))
                 for x in (includes isa AbstractVector ? includes : [includes])]
-    Netlist(string(title),
-            netlist_items(models),
-            includes,
-            netlist_items(parameters),
-            netlist_items(sources),
-            netlist_items(components),
-            global_names(globals))
+    params = netlist_parameters(parameters)
+    unique_parameters(Parameter[p for p in params if p isa Parameter])
+    models, components = netlist_items(models), netlist_items(components)
+    check_instance_parameters(models, components)
+    Netlist(string(title), models, includes, params,
+            netlist_items(sources), components, global_names(globals))
 end
 
 # netlists made without global nets
@@ -201,6 +220,86 @@ Parameter(t::Tuple) = Parameter(string(t[1]),t[2])
 Parameter(p::Pair) = Parameter(string(p.first),p.second)
 Parameter(v::Vector) = [x isa Parameter ? x : Parameter(x) for x in v]
 Parameter(d::AbstractDict) = [Parameter(string(k),v) for (k,v) in d]
+
+#=
+Parameter lists. Netlists, subcircuits, subcircuit instances and other
+elements all take their parameters in any of these forms, alone or in a
+vector or tuple of them (nested collections are flattened):
+
+    Parameter("R", 1u"kΩ")     "R" => 1u"kΩ"      ("R", 1u"kΩ")
+    (R=1u"kΩ", C=1u"nF")        @table R C         nothing
+
+SPICE names are not case sensitive, so R and r name the same parameter, and
+giving one twice is an error.
+=#
+Parameter(name::Symbol, value) = Parameter(string(name), value)
+
+# ("R", 1u"kΩ") is one parameter; other tuples are collections of them
+is_name_value(t::Tuple) = length(t) == 2 && t[1] isa Union{AbstractString,Symbol} &&
+                          t[2] isa Union{Number,AbstractString,Symbol}
+
+const PARAMETER_FORMS = """give parameters as Parameter("R", 1u"kΩ"), "R" => 1u"kΩ", """ *
+                        """("R", 1u"kΩ"), (R=1u"kΩ", C=1u"nF") or @table R C, or a vector of these"""
+
+parameter_items(::Nothing) = Parameter[]
+parameter_items(p::Parameter) = Parameter[p]
+parameter_items(p::Pair) = Parameter[Parameter(string(p.first), p.second)]
+parameter_items(d::AbstractDict) = Parameter[Parameter(string(k), v) for (k, v) in d]
+parameter_items(n::NamedTuple) = Parameter[Parameter(string(k), v) for (k, v) in pairs(n)]
+parameter_items(v::AbstractVector) = reduce(vcat, map(parameter_items, v); init=Parameter[])
+parameter_items(t::Tuple) = is_name_value(t) ? Parameter[Parameter(string(t[1]), t[2])] :
+                            reduce(vcat, map(parameter_items, t); init=Parameter[])
+parameter_items(x::AbstractString) = throw(ArgumentError(
+    "the text $(repr(String(x))) can't be used as a parameter here; " * PARAMETER_FORMS))
+parameter_items(x) = throw(ArgumentError("can't make a parameter from $(repr(x)); " * PARAMETER_FORMS))
+
+# Error if two parameters have the same (case-insensitive) name
+function unique_parameters(ps::AbstractVector{Parameter})
+    seen = Dict{String,String}()
+    for p in ps
+        k = lowercase(p.name)
+        if haskey(seen, k)
+            also = seen[k] == p.name ? "" : " (as $(seen[k]) and $(p.name); SPICE names are not case sensitive)"
+            throw(ArgumentError("parameter $(p.name) is given twice$also"))
+        end
+        seen[k] = p.name
+    end
+    return ps
+end
+
+"""
+   parameter_list(x) -> Vector{Parameter}
+
+The parameters in `x`, which can be a `Parameter`, a `name => value` pair, a
+`(name, value)` tuple, a named tuple `(R=1u"kΩ", C=1u"nF")`, a table from
+[`@table`](@ref), `nothing`, or a vector or tuple of these. Names must be
+unique, ignoring case. Used by `Netlist`, `Subcircuit` and the element
+constructors, so they all accept the same forms.
+"""
+parameter_list(x) = unique_parameters(parameter_items(x))
+
+#=
+Subcircuit instances (X...) may only set parameters that their subcircuit
+declares: ngspice silently ignores any others, so a misspelt name would go
+unnoticed. Checked for subcircuits defined in the same netlist.
+=#
+function check_instance_parameters(models, components)
+    defs = Dict(lowercase(m.name) => m for m in models if m isa Subcircuit)
+    for c in Iterators.flatten((components, (x for s in values(defs) for x in s.components)))
+        (c isa Component && uppercase(c.prefix) == "X" && !isnothing(c.model)) || continue
+        sub = get(defs, lowercase(c.model), nothing)
+        isnothing(sub) && continue
+        declared = Set(lowercase(p.name) for p in sub.parameters)
+        for p in c.parameters
+            lowercase(p.name) in declared && continue
+            has = isempty(sub.parameters) ? "has no parameters" :
+                  "only has " * join((q.name for q in sub.parameters), ", ")
+            throw(ArgumentError("$(c.name) sets parameter $(p.name), but subcircuit $(sub.name) $has"))
+        end
+    end
+end
+export parameter_list
+
 
 #=
 Node names may be given as Integers, Strings or Symbols. A Quantity in a
@@ -233,7 +332,7 @@ function fixname!(c::Component)
 end
 
 function Component(;name=nothing,species="",prefix="",nodes=[],model=nothing,value=nothing,parameters=Parameter[])
-    params = parameters isa AbstractDict ? Parameter(parameters) : Parameter[Parameter(parameters)...]
+    params = parameter_list(parameters)
     fixname!(Component(element_name(prefix,name),species,prefix,node_names(nodes),value,
                        isnothing(model) ? nothing : string(model),params))
 end
