@@ -163,9 +163,9 @@ export load_netlist
 
 Parameter(t::Tuple) = Parameter(string(t[1]),t[2])
 Parameter(v::Vector) = [Parameter(t) for t in v]
-Parameter(d::OrderedDict{String,T}) where T<:Number = [Parameter(k,d[k]) for k in keys(d)]
+Parameter(d::AbstractDict) = [Parameter(string(k),v) for (k,v) in d]
 
-Base.convert(::Type{Vector{Parameter}},d::OrderedDict) = Parameter(d)
+Base.convert(::Type{Vector{Parameter}},d::AbstractDict) = Parameter(d)
 
 
 function fixname!(c::Component)
@@ -360,7 +360,8 @@ function Base.print(io::IO,w::Waveform)
 end
 
 function report(io::IO,w::Waveform)
-    print(io,string(w.wave," waveform with parameters: \n",w.parameters))
+    println(io,w.wave," waveform with parameters:")
+    w.parameters isa AbstractDict ? report(io,w.parameters) : print(io,w.parameters)
     return nothing
 end
 report(w::Waveform) = report(stdout,w)
