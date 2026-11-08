@@ -43,7 +43,6 @@ abstract type DependentSource <: Element end
 """
     SpiceLine(text)
 
-
 A line (or block) of raw SPICE text. Netlists wrap any String they are
 given in a SpiceLine, so text from the older string-returning functions
 can be mixed freely with element objects.
@@ -109,7 +108,6 @@ end
 
 """
     Subcircuit(; name, terminals, parameters=[], components=[])
-
 
 A subcircuit definition (`.subckt name terminals ... .ends`), to list among
 a `Netlist`'s `models` and use with [`Subckt`](@ref). Terminals are node
@@ -196,7 +194,6 @@ netlist_parameters(x) = Any[parameter_items(x)...]
 
 """
     Netlist(; title, models, includes, parameters, sources, components, globals)
-
 
 A circuit, written as SPICE text by `print(n)` or `string(n)` and loaded into
 ngspice with [`load_netlist`](@ref). All keywords are optional:
@@ -299,7 +296,6 @@ end
 """
     parameter_list(x) -> Vector{Parameter}
 
-
 The parameters in `x`, which can be a `Parameter`, a `name => value` pair, a
 `(name, value)` tuple, a named tuple `(R=1u"kΩ", C=1u"nF")`, a table from
 [`@table`](@ref), `nothing`, or a vector or tuple of these. Names must be
@@ -378,7 +374,6 @@ Diode(;name=nothing,nplus,nminus,model) = Diode(name,nplus,nminus,model)
 """
     Subckt(name, nodes, model, parameters=[])
     Subckt(; name, nodes, model, parameters=[])
-
 
 An instance (`X...`) of the subcircuit `model`, e.g. one defined with
 [`Subcircuit`](@ref), connected to `nodes` in the order of its terminals.

@@ -9,7 +9,6 @@ several files. Kept together here so each family is documented in one place.
 """
     Element
 
-
 The supertype of everything that can go in a [`Netlist`](@ref) or
 [`Subcircuit`](@ref): [`Component`](@ref)s (resistors, capacitors, diodes,
 MOSFETs, subcircuit instances, ...), independent [`Source`](@ref)s, the
@@ -22,7 +21,6 @@ Element
 
 """
     Component
-
 
 A netlist element with a name, nodes, and optionally a value, a model name
 and instance parameters. Components are usually made with
@@ -43,7 +41,6 @@ Component
 """
     Resistor(name, nplus, nminus, value)
     Resistor(; name, nplus, nminus, value)
-
 
 A resistor between nodes `nplus` and `nminus`. The `value` can be a
 quantity (`1u"kΩ"`), a number in ohms, a SPICE string (`"4.7k"`) or a
@@ -67,7 +64,6 @@ Resistor
     Capacitor(name, nplus, nminus, value)
     Capacitor(; name, nplus, nminus, value)
 
-
 A capacitor between nodes `nplus` and `nminus`. The `value` is given as for
 [`Resistor`](@ref), e.g. `1u"nF"`, `:C` or `"10p"`.
 
@@ -84,7 +80,6 @@ Capacitor
     Inductor(name, nplus, nminus, value)
     Inductor(; name, nplus, nminus, value)
 
-
 An inductor between nodes `nplus` and `nminus`. The `value` is given as for
 [`Resistor`](@ref), e.g. `1u"mH"`.
 
@@ -100,7 +95,6 @@ Inductor
 """
     Diode(name, nplus, nminus, model)
     Diode(; name, nplus, nminus, model)
-
 
 A diode from anode `nplus` to cathode `nminus`, using the diode `model`.
 The [`model_library`](@ref) includes `D1N4004`, `D1N914`, `D1N4148`,
@@ -119,7 +113,6 @@ Diode
     Opamp(name, nplus, nminus, out, model, parameters=[])
     Opamp(; name, nplus, nminus, out, model, parameters=[])
 
-
 An op-amp: an instance of the three-terminal subcircuit `model`, connected
 as (non-inverting input, inverting input, output). The
 [`model_library`](@ref) includes `ideal_opamp`, `saturating_opamp`,
@@ -137,14 +130,12 @@ Opamp
 """
     Instance(args...; kwargs...)
 
-
 Another name for [`Subckt`](@ref).
 """
 Instance
 
 """
     VCVS(; name, nplus, nminus, control, gain)
-
 
 A voltage-controlled voltage source (`E`): the voltage from `nplus` to
 `nminus` is `gain` times the voltage between the two `control` nodes.
@@ -162,7 +153,6 @@ VCVS
 """
     VCCS(; name, nplus, nminus, control, gain)
 
-
 A voltage-controlled current source (`G`): the current from `nplus` to
 `nminus` through the source is `gain` (a transconductance, e.g. `1u"mS"`)
 times the voltage between the two `control` nodes.
@@ -178,7 +168,6 @@ VCCS
 
 """
     CCVS(; name, nplus, nminus, control, gain)
-
 
 A current-controlled voltage source (`H`): the voltage from `nplus` to
 `nminus` is `gain` (a transresistance, e.g. `1u"kΩ"`) times the current in
@@ -196,7 +185,6 @@ CCVS
 
 """
     CCCS(; name, nplus, nminus, control, gain)
-
 
 A current-controlled current source (`F`): the current from `nplus` to
 `nminus` through the source is `gain` times the current in the voltage
@@ -216,7 +204,6 @@ CCCS
     Parameter(name, value)
     Parameter(name => value)
     Parameter((name, value))
-
 
 A named value: a `.param` line in a [`Netlist`](@ref), a default in a
 [`Subcircuit`](@ref), or an instance parameter such as a MOSFET's `W`.
@@ -240,7 +227,6 @@ Parameter
 """
     Model(name, definition)
 
-
 A `.model` line: `Model("dx", "D(IS=1e-14)")` writes
 `.model dx D(IS=1e-14)`. A `definition` that is already a complete SPICE
 line (starting with `.`) is written as it is. Put models in a
@@ -258,7 +244,6 @@ Model
 """
     Include(filename)
 
-
 An `.include filename` line, to read models or subcircuits from a file. A
 [`Netlist`](@ref) includes the package's [`model_library`](@ref) by
 default; its `includes` keyword also takes plain file names.
@@ -269,7 +254,6 @@ Include
     Point(time, value)
     Point((time, value))
 
-
 One point of a piecewise-linear (PWL) waveform. Times and values can be
 quantities or plain numbers (seconds, and volts or amperes). A vector of
 `(time, value)` tuples can be used wherever points are expected, e.g. in
@@ -279,7 +263,6 @@ Point
 
 """
     Waveform(kind, args...; kwargs...)
-
 
 The value of an independent source: one of
 
@@ -312,7 +295,6 @@ Waveform
 """
     Source
 
-
 An independent voltage or current source with one or more
 [`Waveform`](@ref)s, e.g. a DC value for the operating point, an AC
 magnitude for AC analyses and a sine for transient analyses. Sources are
@@ -341,7 +323,6 @@ missing, and without a name the next free name is used."""
     Vdc(name, nplus, nminus, value=0; kwargs...)
     Idc(name, nplus, nminus, value=0; kwargs...)
 
-
 A DC voltage (current) source from `nplus` to `nminus`, e.g. `5u"V"`
 (`1u"mA"`). A current source's current flows from `nplus` through the
 source to `nminus`.
@@ -363,7 +344,6 @@ Vdc
 """
     Idc(name, nplus, nminus, value=0; kwargs...)
 
-
 A DC current source; the same as [`Vdc`](@ref) for a current.
 """
 Idc
@@ -371,7 +351,6 @@ Idc
 """
     Vac(name, nplus, nminus, value=1; kwargs...)
     Iac(name, nplus, nminus, value=1; kwargs...)
-
 
 A voltage (current) source with AC magnitude `value`, for AC (frequency
 response) analyses. With magnitude 1, node voltages in the results are
@@ -391,7 +370,6 @@ Vac
 """
     Iac(name, nplus, nminus, value=1; kwargs...)
 
-
 A current source with an AC magnitude; the same as [`Vac`](@ref) for a current.
 """
 Iac
@@ -399,7 +377,6 @@ Iac
 """
     Vsin(name, nplus, nminus; offset, amplitude, frequency, phase, kwargs...)
     Isin(name, nplus, nminus; offset, amplitude, frequency, phase, kwargs...)
-
 
 A sinusoidal voltage (current) source for transient analyses. Defaults:
 `offset=0u"V"`, `amplitude=5u"mV"`, `frequency=1u"kHz"`, `phase=0u"°"`. The
@@ -423,7 +400,6 @@ Vsin
 """
     Isin(name, nplus, nminus; offset, amplitude, frequency, phase, kwargs...)
 
-
 A sinusoidal current source; the same as [`Vsin`](@ref) for a current.
 """
 Isin
@@ -431,7 +407,6 @@ Isin
 """
     Vpulse(name, nplus, nminus; low, high, delay, risetime, falltime, width, period, pulses, kwargs...)
     Ipulse(name, nplus, nminus; low, high, delay, risetime, falltime, width, period, pulses, kwargs...)
-
 
 A pulse (square wave) voltage (current) source for transient analyses.
 Defaults: from `low=0u"V"` to `high=5u"V"`, `delay`, `risetime` and
@@ -452,7 +427,6 @@ Vpulse
 """
     Ipulse(name, nplus, nminus; low, high, delay, risetime, falltime, width, period, pulses, kwargs...)
 
-
 A pulse current source; the same as [`Vpulse`](@ref) for a current.
 """
 Ipulse
@@ -460,7 +434,6 @@ Ipulse
 """
     Vpwl(name, nplus, nminus, points; kwargs...)
     Ipwl(name, nplus, nminus, points; kwargs...)
-
 
 A piecewise-linear voltage (current) source for transient analyses, through
 `points` given as `(time, value)` tuples or [`Point`](@ref)s. The
@@ -480,7 +453,6 @@ Vpwl
 """
     Ipwl(name, nplus, nminus, points; kwargs...)
 
-
 A piecewise-linear current source; the same as [`Vpwl`](@ref) for a current.
 """
 Ipwl
@@ -488,7 +460,6 @@ Ipwl
 """
     Vsource(name, nplus, nminus; dc, ac, pwl, pulse)
     Isource(name, nplus, nminus; dc, ac, pwl, pulse)
-
 
 A voltage (current) source with only the waveforms given by keywords; with
 none, a source with no value (0 V, which can still measure a current).
@@ -505,7 +476,6 @@ Vsource
 """
     Isource(name, nplus, nminus; dc, ac, pwl, pulse)
 
-
 A current source with the waveforms given by keywords; the same as [`Vsource`](@ref) for a current.
 """
 Isource
@@ -517,7 +487,6 @@ Isource
     resistor(nplus, nminus, value)
     resistor(name, nplus, nminus, value)
     resistor(; name, nplus, nminus, value)
-
 
 The SPICE line for a resistor, as [`SpiceText`](@ref): the same as
 `string(Resistor(...))`. Without a name the next free name is used.
@@ -550,7 +519,6 @@ end
     vsin(name, nplus, nminus, offset, amplitude, frequency; kwargs...)
     vpulse(name, nplus, nminus; kwargs...)
     vpwl(name, nplus, nminus; points, kwargs...)
-
 
 The SPICE line for a voltage source, as [`SpiceText`](@ref). [`idc`](@ref),
 [`iac`](@ref), [`isin`](@ref), [`ipulse`](@ref) and [`ipwl`](@ref) give
@@ -589,7 +557,6 @@ end
 """
     subckt_instance(; name, terminals, model)
 
-
 The SPICE line for an instance of subcircuit `model`, as
 [`SpiceText`](@ref). `terminals` is a vector of nodes or a string of
 space-separated node names. The text version of [`Subckt`](@ref).
@@ -609,7 +576,6 @@ subckt_instance
 """
     parallel(R1, R2, ...)
 
-
 The resistance of resistors in parallel, in Ω.
 
 # Example
@@ -623,7 +589,6 @@ parallel
 
 """
     scale_quantity(x)
-
 
 `x` in the SI prefix that reads best for its magnitude: e.g. `0.0047u"A"`
 becomes 4.7 mA and `1500u"Ω"` becomes 1.5 kΩ. Handles time, frequency (Hz
@@ -655,7 +620,6 @@ end
 
 """
     isHz(x::Quantity)
-
 
 Whether `x` is a frequency in Hz. [`isradps`](@ref), [`israd`](@ref),
 [`is°`](@ref), [`iss`](@ref), [`isvoltage`](@ref), [`iscurrent`](@ref),
@@ -689,7 +653,6 @@ end
 """
     model_library()
 
-
 The path of the SPICE model library that comes with the package. A
 [`Netlist`](@ref) includes it by default. It defines op-amps
 (`ideal_opamp`, `saturating_opamp`, `two_stage_opamp`, `ideal_ota`,
@@ -702,7 +665,6 @@ model_library
 """
     dumpbuffer()
 
-
 Print the messages ngspice has written since they were last printed or
 cleared. Useful after [`be_quiet`](@ref), to see why an analysis failed.
 """
@@ -710,7 +672,6 @@ dumpbuffer
 
 """
     transient(; tstep, tmax, maxstep=nothing)
-
 
 Run a transient analysis from 0 to `tmax`, with results every `tstep`;
 `maxstep` limits ngspice's internal time step. The same as
@@ -720,7 +681,6 @@ transient
 
 """
     alter(source; frequency, amplitude, offset, phase)
-
 
 Change the settings of a sine [`Source`](@ref) in place, e.g. to sweep its
 frequency over several simulations. The source must have exactly one sine
@@ -743,7 +703,6 @@ alter
 """
     device_prefix(species)
 
-
 The SPICE prefix letter for a device species, e.g. `device_prefix("resistor")`
 is `"R"` and `device_prefix("vcvs")` is `"E"`.
 """
@@ -751,7 +710,6 @@ device_prefix
 
 """
     Spectrum(node, fundamental; N=20, D=50)
-
 
 Run a transient analysis of `N` periods of the `fundamental` frequency (with
 `D` time steps per period) and analyse the spectrum of the voltage at
@@ -773,7 +731,6 @@ Spectrum
 """
     node"name"
 
-
 The voltage at node `name` from the latest simulation, as a vector with
 units (scaled to V, mV, μV, ... to suit its size). The macro expands to a
 function call, so it reads the latest results each time the code runs.
@@ -791,7 +748,6 @@ julia> simulate(:op); node"out"
 """
     i"source"
 
-
 The current in voltage source `source` from the latest simulation, as a
 vector with units (A, mA, μA, ...). ngspice's convention is that a positive
 current flows into the source's `nplus` node, through the source.
@@ -801,7 +757,6 @@ current flows into the source's `nplus` node, through the source.
 """
     dB"name"
 
-
 The magnitude of node `name`'s voltage (or of another ngspice vector) in
 decibels, `20 log10 |x|`, from the latest AC analysis.
 """
@@ -810,7 +765,6 @@ decibels, `20 log10 |x|`, from the latest AC analysis.
 """
     phase"name"
 
-
 The phase of node `name`'s voltage (or of another ngspice vector) in
 degrees, from the latest AC analysis.
 """
@@ -818,7 +772,6 @@ degrees, from the latest AC analysis.
 
 """
     pwl"table"
-
 
 Points for a piecewise-linear source from a two-column table of times and
 values with units, one point per line.

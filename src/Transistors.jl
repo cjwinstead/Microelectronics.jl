@@ -47,7 +47,6 @@ end
     NMOS(name, drain, gate, source, body=source; model="ald1105n", W, L, M, ...)
     NMOS(; name, drain, gate, source, body=source, model="ald1105n", W, L, M, ...)
 
-
 An n-channel MOSFET. The body is tied to the source unless given, and the
 model defaults to the ALD1105 n-channel device in the model library, whose
 default size is W = 20 μm, L = 10 μm.
@@ -75,7 +74,6 @@ NMOS(; name=nothing, drain, gate, source, body=source, model="ald1105n", paramet
     PMOS(name, drain, gate, source, body=source; model="ald1105p", W, L, M, ...)
     PMOS(; name, drain, gate, source, body=source, model="ald1105p", W, L, M, ...)
 
-
 A p-channel MOSFET; see [`NMOS`](@ref). The body is tied to the source unless
 given (a PMOS body belongs at the most positive voltage, usually VDD), and
 the model defaults to the ALD1105 p-channel device.
@@ -96,7 +94,6 @@ PMOS(; name=nothing, drain, gate, source, body=source, model="ald1105p", paramet
     MOSFET(name, drain, gate, source, body, model, parameters=[]; W, L, M, ...)
     MOSFET(; name, drain, gate, source, body, model, parameters=[], W, L, M, ...)
 
-
 A MOSFET of any polarity: the model decides. All four terminals are required;
 [`NMOS`](@ref) and [`PMOS`](@ref) tie the body to the source by default.
 Instance parameters can be keywords or a vector of `Parameter`s.
@@ -115,7 +112,6 @@ end
 """
     mosfet(name, drain, gate, source, body, model="ald1105n"; W, L, M, ...)
 
-
 SPICE text for a MOSFET: the same as `string(MOSFET(...))`. Sizes and other
 instance parameters are only written when given, so the model's own defaults
 (e.g. W = 30 μm, L = 10 μm for the CD4007N) apply otherwise.
@@ -127,7 +123,6 @@ export NMOS, PMOS, MOSFET, mosfet
 
 """
     element[quantity]
-
 
 The ngspice name of a device quantity, e.g. `M1["gm"]` is `"@m1[gm]"`.
 """
@@ -204,7 +199,6 @@ end
 """
     device_values(name)
 
-
 Operating values of MOSFET `name` in the latest operating-point, DC or
 transient analysis, with units:
 
@@ -255,7 +249,6 @@ mosfet_current_vector(name) = haskey(LOADED_MOSFETS, name) ? "@$name[id]" : noth
 
 """
     signal_data(vector)
-
 
 The type ("voltage" or "current") and values of an ngspice result vector. A
 MOSFET drain current (`"@m1[id]"`) is returned as the current into the
@@ -317,7 +310,6 @@ end
 """
     sweep_curves(n)
 
-
 How the `n` points of the latest analysis divide into curves. After a nested
 DC sweep (`simulate(:dc; ..., sweep2=...)`) there is one `(indices, label)`
 pair per value of the outer source, e.g. `(1:51, "VGS = 1 V")`; otherwise a
@@ -340,7 +332,6 @@ export sweep_curves
 
 """
     curve_series(x, ys, labels)
-
 
 Split each signal in `ys` into one series per curve of the latest analysis
 (see [`sweep_curves`](@ref)), for plotting. Returns vectors of x data,
