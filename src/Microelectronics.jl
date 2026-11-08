@@ -185,7 +185,7 @@ end
 function model_library()
     joinpath(pkgdir(Microelectronics),"model_library.sp")
 end
-export parallel, scale_radps, scale_quantity, scale_resistor, scale_Hz, scale_capacitor, model_library, scale_s
+export parallel, scale_rad, scale_quantity, scale_resistor, scale_Hz, scale_capacitor, model_library, scale_s
 
 "Hide ngspice's messages (the default in notebooks)."
 function be_quiet()
@@ -247,7 +247,8 @@ counts = Dict{String,Int}()
 #============== Convenience Functions ==============#
 
 """
-   hasall(args,k)
+    hasall(args,k)
+
 
 Return true if `args` has all keys specified by `k`. Usually
 `args` is a Dict or NamedTuple and `k` is a Vector.
@@ -257,7 +258,8 @@ function hasall(args,k)
 end
 
 """
-   hasany(args,k)
+    hasany(args,k)
+
 
 Return true if `args` has any of the keys specified by `k`.
 Usually `args` is a Dict or NamedTuple and `k` is a Vector.
@@ -270,7 +272,8 @@ end
 #=========== Functions Manipulating Units ==============#
 
 """
-   dB20(x)
+    dB20(x)
+
 
 Convert `x` to decibels using 20*log10(x).
 The argument `x` can be a scalar or a collection of
@@ -349,7 +352,8 @@ end
 
 
 """
-   rad(x::Number)
+    rad(x::Number)
+
 
 Given an angular Quantity `x`, return the representation of
 `x` in radians or radians per second. If `x` is given in
@@ -379,7 +383,8 @@ export rad, israd, isradps, isHz, is°, isvoltage, iscurrent, isresistor, iscapa
 
 
 """
-   °(x::Quantity)
+    °(x::Quantity)
+
 
 Given an angular Quantity `x`, return the representation of
 `x` in degrees or Hz. If `x` is given in radians or rad/s,
@@ -410,7 +415,8 @@ export °
 
 
 """
-   Hz(x::Quantity)
+    Hz(x::Quantity)
+
 
 Given angular Quantity `x` with units rad/s or
 dimension s^-1, scale `x` by `1/2π` and replace
@@ -435,7 +441,8 @@ export Hz
 
 
 """
-   report(s::String)
+    report(s::String)
+
 
 Print `s` within horizontal lines for emphasis. The lines
 are made using '-' characters, and are auto-sized to match
@@ -487,7 +494,8 @@ end
 
 
 """
-   ParameterTable
+    ParameterTable
+
 
 A table of parameter names and values, as made by [`@table`](@ref). It is an
 ordered dictionary from names (`String`) to values: entries keep the order
@@ -540,8 +548,9 @@ Base.print(io::IO, t::ParameterTable) = report(io, t)
 
 
 """
-   report(io::IO=stdout, p::AbstractDict)
-   report(p::NamedTuple)
+    report(io::IO=stdout, p::AbstractDict)
+    report(p::NamedTuple)
+
 
 Print the table `p` (e.g. from [`@table`](@ref)) in Markdown format on `io`.
 
@@ -582,7 +591,8 @@ report(p::AbstractDict)=report(stdout,p)
 export report
 
 """
-   SpiceText
+    SpiceText
+
 
 SPICE text, as returned by `build_netlist`, `spice_parameters` and the
 element functions (`resistor`, `vdc`, `mosfet`, ...). It is an
@@ -648,7 +658,8 @@ end
 
 #=
 """
-   device_species(d)
+    device_species(d)
+
 
 Returns a Symbol indicating the device species that corresponds to
 SPICE prefix `d`. The prefix can be a String, Char, Symbol, or
@@ -678,7 +689,8 @@ export device_prefix
 
 
 """
-   spice_value(q::Quantity)
+    spice_value(q::Quantity)
+
 
 Convert a `Unitful` quantity to a stripped numerical value
 in preferred (SI) units. Useful to print values in SPICE netlists.
@@ -701,7 +713,8 @@ export spice_value
 
 
 """
-   qstr(q)
+    qstr(q)
+
 
 Convert quantity `q` to a String to use in SPICE. If `q` is
 already a String, it's returned unaltered. If `q` is a Unitful
@@ -758,7 +771,8 @@ phase_degrees(p::Quantity) = @sprintf("%g", ustrip(u"°", p))
 phase_degrees(p) = qstr(p)
 
 """
-   sin_string(offset,amplitude,frequency,phase=0)
+    sin_string(offset,amplitude,frequency,phase=0)
+
 
 Return a SPICE string representing a sinusoidal source. Can be
 appended to voltage or current sources.
@@ -789,7 +803,8 @@ export sin_string
 
 
 """
-   pwl_string(points::Vector)
+    pwl_string(points::Vector)
+
 
 Returns a SPICE-formatted string for a Piecewise Linear independent
 source using data provided in `points`. Each element of `points` is
@@ -822,7 +837,8 @@ export pwl_string
 
 
 """
-   pulse_string(;low=0u"V",high=5u"V",delay=10u"ns",risetime=10u"ns",falltime=10u"ns",width=490u"ns",period=1u"ms",pulses="")
+    pulse_string(;low=0u"V",high=5u"V",delay=10u"ns",risetime=10u"ns",falltime=10u"ns",width=490u"ns",period=1u"ms",pulses="")
+
 
 Returns a SPICE-formatted string for a PULSE independent source. The
 `low` parameter is the initial value, and `high` is the "pulsed" value.
@@ -841,7 +857,8 @@ export pulse_string
 
 
 """
-   nextname(prefix)
+    nextname(prefix)
+
 
 Increment the counter for device prefix `prefix` and return the next
 automatic device name. Used when an element is created without a name.
@@ -902,7 +919,8 @@ export spice_parameters
 #============= Instantiate Bipole Devices ===============#
 
 """
-   bipole(species,nplus,nminus,value)
+    bipole(species,nplus,nminus,value)
+
 
 Return a String declaring a SPICE instance of a two-terminal bipole
 device of the specified `species`, connected between nodes
@@ -929,7 +947,8 @@ export bipole
 
 
 """
-   bipole(species,name,nplus,nminus,value)
+    bipole(species,name,nplus,nminus,value)
+
 
 Return a String declaring a SPICE instance of a two-terminal bipole
 device of the specified `species`, connected between nodes
@@ -1002,7 +1021,8 @@ end
 #====== Build and Load Netlists ===========#
 
 """
-   build_netlist([title]; title="circuit", parameters, models, sources, components)
+    build_netlist([title]; title="circuit", parameters, models, sources, components)
+
 
 Construct a `Netlist`, load it into ngspice, and return its text:
 
@@ -1050,9 +1070,12 @@ export build_netlist
 
 
 """
-   load_netlist(n::AbstractString)
+    load_netlist(n)
 
-Calls the NgHerb `load_netlist` function.
+Load netlist `n` into ngspice, replacing any circuit loaded before. `n` is a
+[`Netlist`](@ref) or SPICE text, such as the result of
+[`build_netlist`](@ref) or a netlist file read with `read(file, String)`.
+Run an analysis on it with [`simulate`](@ref).
 """
 function load_netlist(n::AbstractString)
     register_mosfets(n)                 # see Transistors.jl
@@ -1066,7 +1089,8 @@ export load_netlist
 #=========== Standard Electrical Elements ==============#
 
 """
-   opamp(;name,nplus,nminus,out,model="ideal_opamp",params="")
+    opamp(;name,nplus,nminus,out,model="ideal_opamp",params="")
+
 
 Instantiate a three-terminal op amp subcircuit. There are
 no positional arguments. Mandataory keyword arguments are:
@@ -1102,7 +1126,8 @@ export opamp
 
 
 """
-   independent_source(species;args...)
+    independent_source(species;args...)
+
 
 Instantiate an independent Voltage or Current source.
 `species` is "V" or "I".
@@ -1164,7 +1189,8 @@ export independent_source
 
 
 """
-   dependent_source(kind::Symbol; name, nplus, nminus, control, gain=1)
+    dependent_source(kind::Symbol; name, nplus, nminus, control, gain=1)
+
 
 Return a SPICE line for a controlled source. `kind` is `:vcvs`, `:vccs`,
 `:ccvs` or `:cccs`. For voltage-controlled sources `control` is a pair of
@@ -1233,27 +1259,27 @@ end
 #============= Simulation Interface =============#
 
 """
-simulate(analysis::Symbol; args...)
+    simulate(analysis::Symbol; kwargs...)
 
-Request the indicated `ngspice` analysis. Keyword arguments
-must be provided, depending on the analysis type.
 
-Analysis   Keyword Argument   Description
---------   -----------------  ------------------
-`:tran`    `tmax`             Time to end the simulation
-           `tstep`            Output time step
-           `maxstep`          (optional) largest internal time step
-`:dc`      `device`           Device or parameter to sweep
-           `start`            Initial value
-           `stop`             Final value
-           `step`             Increment between values
-           `sweep2`           (optional) outer sweep, a tuple
-                              (device, start, stop, step), for a
-                              family of curves
-`:ac`      `start`            Low frequency
-           `stop`             High frequency
-           `mode`             :lin, :dec, :oct
-           `steps`            Points per interval
+Run an ngspice analysis on the loaded netlist (see [`load_netlist`](@ref)
+and [`build_netlist`](@ref)). Values can be quantities or plain SI numbers.
+
+| Analysis | Keywords | Meaning |
+|:-------- |:-------- |:------- |
+| `:op`    |          | operating point |
+| `:tran`  | `tstep`  | output time step |
+|          | `tmax`   | end time |
+|          | `maxstep` | (optional) largest internal time step |
+| `:dc`    | `device` | source (or resistor) to sweep |
+|          | `start`, `stop`, `step` | sweep values |
+|          | `sweep2` | (optional) outer sweep `(device, start, stop, step)`, for a family of curves |
+| `:ac`    | `start`, `stop` | frequency range (Hz, or rad/s converted to Hz) |
+|          | `mode`   | `:dec` (default), `:oct` or `:lin` |
+|          | `steps`  | points per decade or octave, or in total for `:lin` (default 10) |
+
+Read the results with [`signals`](@ref), `node"..."`, `i"..."`,
+[`device_values`](@ref) and the other result functions.
 
 # Examples
 
@@ -1285,7 +1311,8 @@ spice_name(x) = lowercase(string(x))
 latest_plot() = try NgHerb.curplot() catch; nothing end
 
 """
-   analysis_kind()
+    analysis_kind()
+
 
 Return the kind of the latest analysis as a Symbol: `:op`, `:dc`, `:ac`,
 `:tran`, `:spec` (after `fft`), or `:none` if nothing has been simulated.
@@ -1334,7 +1361,8 @@ export transient
 
 
 """
-   dc(; device, start, stop, step, sweep2=nothing)
+    dc(; device, start, stop, step, sweep2=nothing)
+
 
 Run a DC sweep of `device` (a voltage or current source, or a resistor).
 With `sweep2 = (device2, start2, stop2, step2)`, the first sweep is repeated
@@ -1348,7 +1376,8 @@ export dc
 
 
 """
-   ac(;start,stop,mode,points)
+    ac(;start,stop,mode,points)
+
 
 Run an AC simulation with parameters:
 
@@ -1369,7 +1398,8 @@ export ac
 
 
 """
-   fft(node; frequency=1u"kHz", N=20, D=50)
+    fft(node; frequency=1u"kHz", N=20, D=50)
+
 
 Simulate `N` periods of `frequency` with `D` time steps per period, then
 return the spectrum of the voltage at `node` from ngspice's FFT (`f`, `mag`,
@@ -1394,7 +1424,8 @@ export fft
 
 
 """
-   distortion(spectrum; nh=10)
+    distortion(spectrum; nh=10)
+
 
 Add the harmonics and total harmonic distortion to the result of
 [`fft`](@ref). `harmonics` holds `(amplitude, phase)` for harmonics 1 to `nh`
@@ -1423,7 +1454,8 @@ export distortion
 
 
 """
-   tran_time()
+    tran_time()
+
 
 Returns the `time` vector from NGSpice.
 """
@@ -1439,7 +1471,8 @@ end
 export tran_time
 
 """
-   dc_sweep()
+    dc_sweep()
+
 
 Returns a vector of sweep values used in a DC simulation.
 
@@ -1495,7 +1528,8 @@ export dc_sweep
 
 
 """
-   ac_freq()
+    ac_freq()
+
 
 Return a vector of frequency values used in an AC
 simulation.
@@ -1540,7 +1574,8 @@ export ac_freq
 
 
 """
-   nodes(args...)
+    nodes(args...)
+
 
 Return a Vector of Vectors corresponding to the given
 node names. Each sub-vector contains voltages at the
@@ -1578,7 +1613,8 @@ export nodes
 
 
 """
-   find_vec(name; node=true, branch=true)
+    find_vec(name; node=true, branch=true)
+
 
 Return the name of the result vector for a node voltage, a source current or
 a MOSFET drain current in the latest analysis. `name` is a node name
@@ -1614,7 +1650,8 @@ iscurrent(name::AbstractString) = signal_data(find_vec(name))[1] == "current"
 
 
 """
-   magnitudes(args...)
+    magnitudes(args...)
+
 
 Return a Vector of magnitude Vectors corresponding to
 the given node names. Each sub-vector contains voltage
@@ -1658,7 +1695,8 @@ export magnitudes
     
 
 """
-   phases(args...)
+    phases(args...)
+
 
 Return a Vector of Phase Vectors corresponding to the given
 node names. Each sub-vector contains voltages at the
@@ -1716,17 +1754,17 @@ end
 
 
 """
-   measure(s::Symbol;args...)
+    measure(s::Symbol;args...)
 
-Perform one of several SPICE measurements after
-running a simulation.
 
-Measurement        Function Format      Comment
-------------      --------------------  -----------------------
-Voltage Gain       measure(:Av;in,out)  `in`,`out` are nodes (transient)
-Transconductance   measure(:Gm;in,out)  `out` is a voltage source (transient)
-Slew Rate          measure(:slew;node)  (transient)
-Cutoff frequency   measure(:cutoff;name) -3 dB point (AC)
+Measure a property of the latest simulation:
+
+| Measurement | Call | Analysis |
+|:----------- |:---- |:-------- |
+| voltage gain (peak-to-peak ratio) | `measure(:Av; in, out)`, nodes `in` and `out` | transient |
+| transconductance | `measure(:Gm; in, out)`, `out` a voltage source | transient |
+| slew rate | `measure(:slew; node)` | transient |
+| cutoff frequency (-3 dB point) | `measure(:cutoff; name)` | AC |
 
 Names are not case sensitive. An `ArgumentError` is thrown if the latest
 analysis is not of the kind the measurement needs.
@@ -1780,7 +1818,8 @@ export measure
 
 #============= Table of Parameters =========================#
 """
-   @table(p1, p2, ...)
+    @table(p1, p2, ...)
+
 
    @table p1 p2 ...
 
@@ -1888,5 +1927,6 @@ export @pwl_str
 
 include("Transistors.jl")
 include("Plotting.jl")
+include("docs.jl")
 
 end

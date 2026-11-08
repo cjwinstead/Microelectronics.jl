@@ -41,7 +41,8 @@ abstract type Element end
 abstract type DependentSource <: Element end
 
 """
-   SpiceLine(text)
+    SpiceLine(text)
+
 
 A line (or block) of raw SPICE text. Netlists wrap any String they are
 given in a SpiceLine, so text from the older string-returning functions
@@ -107,7 +108,8 @@ end
 
 
 """
-   Subcircuit(; name, terminals, parameters=[], components=[])
+    Subcircuit(; name, terminals, parameters=[], components=[])
+
 
 A subcircuit definition (`.subckt name terminals ... .ends`), to list among
 a `Netlist`'s `models` and use with [`Subckt`](@ref). Terminals are node
@@ -193,10 +195,37 @@ netlist_parameters(x::Tuple) = is_name_value(x) ? Any[parameter_items(x)...] :
 netlist_parameters(x) = Any[parameter_items(x)...]
 
 """
-   Netlist(; title, models, includes, parameters, sources, components, globals)
+    Netlist(; title, models, includes, parameters, sources, components, globals)
 
-A circuit. `globals` names nets shared by the whole circuit, including
-inside subcircuit definitions, e.g. `globals=["vdd"]` writes `.global vdd`.
+
+A circuit, written as SPICE text by `print(n)` or `string(n)` and loaded into
+ngspice with [`load_netlist`](@ref). All keywords are optional:
+
+- `title`: the first line of the netlist
+- `models`: [`Model`](@ref)s and [`Subcircuit`](@ref) definitions
+- `includes`: files to include; the [`model_library`](@ref) by default
+- `parameters`: `.param` lines, in any form [`parameter_list`](@ref) takes
+  (e.g. `@table R C` or `(R=1u"kΩ", C=1u"nF")`), or `.param` text
+- `sources`, `components`: elements, SPICE text (e.g. from [`resistor`](@ref)),
+  or vectors of these
+- `globals`: nets shared by the whole circuit, including inside subcircuit
+  definitions, e.g. `globals=["vdd"]` writes `.global vdd`
+
+Subcircuit instances may only set parameters their subcircuit declares.
+
+# Example
+
+```jldoctest
+julia> n = Netlist(title="divider", includes=[], sources=[Vdc("in","in",0,1u"V")],
+                   components=[Resistor("R1","in","out",1u"kΩ"), Resistor("R2","out",0,1u"kΩ")]);
+
+julia> print(n)
+* divider
+Vin   in    0     DC 1
+R1    in    out   1000
+R2    out   0     1000
+.end
+```
 """
 function Netlist(;title="circuit",models=[],includes=[Include(model_library())],
                  parameters=[],sources=[],components=[],globals=String[])
@@ -268,7 +297,8 @@ function unique_parameters(ps::AbstractVector{Parameter})
 end
 
 """
-   parameter_list(x) -> Vector{Parameter}
+    parameter_list(x) -> Vector{Parameter}
+
 
 The parameters in `x`, which can be a `Parameter`, a `name => value` pair, a
 `(name, value)` tuple, a named tuple `(R=1u"kΩ", C=1u"nF")`, a table from
@@ -346,8 +376,9 @@ Inductor(;name=nothing,nplus,nminus,value) = Inductor(name,nplus,nminus,value)
 Diode(name,nplus,nminus,model) = Component(;name,nodes=(nplus,nminus),model,species="diode",prefix="D")
 Diode(;name=nothing,nplus,nminus,model) = Diode(name,nplus,nminus,model)
 """
-   Subckt(name, nodes, model, parameters=[])
-   Subckt(; name, nodes, model, parameters=[])
+    Subckt(name, nodes, model, parameters=[])
+    Subckt(; name, nodes, model, parameters=[])
+
 
 An instance (`X...`) of the subcircuit `model`, e.g. one defined with
 [`Subcircuit`](@ref), connected to `nodes` in the order of its terminals.

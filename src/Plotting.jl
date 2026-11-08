@@ -24,7 +24,8 @@ const SCALED_UNITS = Dict(dimension(u"V") => (u"kV", u"V", u"mV", u"μV", u"nV",
                           dimension(u"A") => (u"kA", u"A", u"mA", u"μA", u"nA", u"pA"))
 
 """
-   autoscale(v)
+    autoscale(v)
+
 
 Convert a vector of voltages or currents to the prefixed unit (kV, V, mV,
 μV, ...) that suits its largest magnitude. Other quantities are returned
@@ -46,7 +47,8 @@ end
 #========================== signals ==========================#
 
 """
-   Signals
+    Signals
+
 
 Node voltages and source currents from the latest simulation, with the
 analysis' independent variable. Created by [`signals`](@ref).
@@ -75,7 +77,8 @@ struct Signals
 end
 
 """
-   signals(names...; nodes=[], branches=[])
+    signals(names...; nodes=[], branches=[])
+
 
 Collect node voltages and source currents from the latest simulation into a
 [`Signals`](@ref) object.
@@ -183,7 +186,8 @@ function BodeData(nets...)
 end
 
 """
-   bode(names...; kwargs...)
+    bode(names...; kwargs...)
+
 
 Bode plot (magnitude in dB and phase in degrees against frequency) of node
 voltages and source currents from the latest AC analysis. Names are nodes or
@@ -226,7 +230,8 @@ end
 #========================== spectrum ==========================#
 
 """
-   plot(𝒮::Spectrum; nh=10)
+    plot(𝒮::Spectrum; nh=10)
+
 
 Plot the magnitude spectrum in dB on a linear frequency axis, with vertical
 lines at the fundamental and harmonics. `nh` sets how many harmonics are
