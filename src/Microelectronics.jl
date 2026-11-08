@@ -830,13 +830,11 @@ julia> spice_parameters(d,"a")
 
 ```
 """
+# One `.param` line; used by spice_parameters and by Netlist printing.
+param_line(name,value) = @sprintf(".param %5s=%s",name,qstr(value))
+
 function spice_parameters(p::AbstractDict,vars...)
-    ostr = ""
-    for var in vars
-        val = p[var]            
-        ostr *= @sprintf(".param %5s=%s\n",var,qstr(val))
-    end
-    return SpiceText(ostr)
+    SpiceText(join(param_line(var,p[var])*"\n" for var in vars))
 end
 
 spice_parameters(p::AbstractDict) = spice_parameters(p,Tuple(keys(p))...)
