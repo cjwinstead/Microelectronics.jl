@@ -41,6 +41,7 @@ Parameter tables from report(). Shared by the main and dev branches.
         redirect_stdout(() -> report((a=2/3, b=1500u"Ω")), io); close(io); read(path, String)
     end
     @test out == table(@table a=2/3 b=1500u"Ω")
+    @test table((a=2/3, b=1500u"Ω")) == out               # report(io, ::NamedTuple)
 
     # scale_quantity chooses the prefix from the magnitude
     @test unit(scale_quantity(-0.0047u"A")) == u"mA"

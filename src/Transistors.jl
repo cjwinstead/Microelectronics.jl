@@ -57,7 +57,7 @@ size), `M` (number of devices in parallel), and `AD`, `AS`, `PD`, `PS`,
 
 # Examples
 
-```julia-repl
+```jldoctest; filter = r" +" => " "
 julia> NMOS("M1", "d", "g", 0)                     # body tied to the source
 M1    d     g     0     0     ald1105n
 
@@ -80,7 +80,7 @@ the model defaults to the ALD1105 p-channel device.
 
 # Example
 
-```julia-repl
+```jldoctest; filter = r" +" => " "
 julia> PMOS("M3", "out", "in", "vdd")
 M3    out   in    vdd   vdd   ald1105p
 ```
