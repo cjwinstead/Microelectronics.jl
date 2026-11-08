@@ -49,9 +49,19 @@
         @test spice_value(1u"μs") == 1e-6
         @test spice_value(10u"mS") ≈ 0.01
         @test spice_value(15u"kHz") == 15e3
-        @test spice_value(rad(1u"MHz")) == 1e6          # rad/s are sent as Hz
-        @test spice_value(1u"rad/s") ≈ 1/2π
-        @test spice_value(1/(1u"kΩ"*1u"μF")) ≈ 159.15494309189535
+        # angular frequencies are plain SI values, not converted to Hz
+        @test spice_value(1u"krad/s") == 1000
+        @test spice_value(rad(1u"MHz")) ≈ 2π*1e6
+        @test spice_value(1/(1u"kΩ"*1u"μF")) ≈ 1000
+        @test qstr(1u"krad/s") == "1000"
+        # ... but fields that SPICE reads as Hz convert them
+        @test Microelectronics.freq_str(1u"krad/s") == "159.155"
+        @test Microelectronics.freq_str(1/(1u"kΩ"*1u"μF")) == "159.155"
+        @test Microelectronics.freq_str(2u"kHz") == "2000"
+        @test Microelectronics.freq_str(:fs) == "{fs}"
+        @test Microelectronics.freq_str(50) == "50"
+        @test tstr(Vsin("V1",1,0;frequency=1u"krad/s")) == "V1 1 0 SIN (0,0.005,159.155,0)"
+        @test occursin(",159.155,", sin_string(0,1,1u"krad/s"))
         @test spice_value(1u"mV") isa Float64
     end
 

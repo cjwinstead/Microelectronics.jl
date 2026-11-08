@@ -681,11 +681,22 @@ export device_prefix
    spice_value(q::Quantity)
 
 Convert a `Unitful` quantity to a stripped numerical value
-in preferred units. Useful to print values in SPICE netlists.
+in preferred (SI) units. Useful to print values in SPICE netlists.
+
+Angular frequencies are not changed: `spice_value(1u"krad/s")` is 1000, as
+it is for any other value in SI units. Where SPICE expects a frequency in Hz
+(a sine source's frequency, an AC sweep), Microelectronics converts with
+[`Hz`](@ref) first, so `frequency=1u"krad/s"` gives 159.2 Hz there. A
+`.param` value has no known meaning, so convert it yourself if it is used
+as a frequency: `@table fs=Hz(ω)`.
 """
 function spice_value(q::Quantity)
-    Float64(ustrip(upreferred(Hz(q))))     
+    Float64(ustrip(upreferred(q)))
 end
+
+# A value for a SPICE field that is a frequency in Hz: angular frequencies
+# (rad/s, or 1/s as from 1/(R*C)) are converted with Hz().
+freq_str(f) = f isa Quantity ? qstr(Hz(f)) : qstr(f)
 export spice_value
 
 
@@ -767,7 +778,7 @@ julia> sin_string(0u"V", 1u"V", 1u"kHz", 90u"°")
 ```
 """
 function sin_string(offset,amplitude,frequency,phase=0)
-    args = qstr.((offset,amplitude,frequency))
+    args = (qstr(offset), qstr(amplitude), freq_str(frequency))
     if phase isa Number && iszero(phase)
         return @sprintf(" SIN (%s,%s,%s,0) ", args...)
     else
@@ -1353,7 +1364,7 @@ Run an AC simulation with parameters:
   * `steps` = number of frequency steps per interval
 """
 function ac(;start,stop,mode,steps)
-    s="ac $(string(mode)) $(qstr(steps)) $(qstr(start)) $(qstr(stop)) "
+    s="ac $(string(mode)) $(qstr(steps)) $(freq_str(start)) $(freq_str(stop)) "
     NgHerb.cmd(s)
 end
 export ac
@@ -1369,7 +1380,7 @@ return the spectrum of the voltage at `node` from ngspice's FFT (`f`, `mag`,
 [`distortion`](@ref) uses.
 """
 function fft(node; frequency=1u"kHz", N=20, D=50)
-    T = 1/frequency => u"s"
+    T = 1/Hz(frequency) => u"s"
     tstep = T/D
     simulate(:tran; tstep, tmax=N*T, maxstep=tstep)   # resolve every period finely
     NgHerb.cmd("linearize")                           # resample on an even tstep grid

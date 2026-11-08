@@ -62,7 +62,10 @@
         sources = [vsin(1,1,0;frequency=:fs,ac=1)]
         components = [resistor(1,1,2,1u"kΩ"), capacitor(1,2,0,1u"μF")]
         n = quietly(() -> build_netlist(;title="test circuit",parameters,sources,components))
-        @test tstr(n) == "* test circuit $lib .param fs=159.155 V1 1 0 AC 1 SIN (0,0.005,{fs},0) R1 1 2 1000 C1 2 0 1e-06 .end"
+        @test tstr(n) == "* test circuit $lib .param fs=1000 V1 1 0 AC 1 SIN (0,0.005,{fs},0) R1 1 2 1000 C1 2 0 1e-06 .end"
+
+        # a .param is a plain SI value; convert angular frequencies yourself
+        @test occursin(".param fs=159.155", tstr(spice_parameters(@table fs=Hz(1u"krad/s"))))
 
         txt = quietly(() -> build_netlist("My title"; sources=[vdc("V1",1,0,1u"V")]))
         @test startswith(txt, "* My title\n")
