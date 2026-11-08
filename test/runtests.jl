@@ -9,6 +9,7 @@ include("transistors.jl")
 include("transistor_plots.jl")
 include("globals.jl")
 include("reports.jl")
+include("spice_text.jl")
 
 rgx=r"\s+"=>" "
 tstr(s) = strip(replace(s,rgx))
