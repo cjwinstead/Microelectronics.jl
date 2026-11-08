@@ -16,9 +16,12 @@ const OrderedDict = Microelectronics.OrderedDict
         end
         @test !any(m -> m.module === Microelectronics, methods(print, (IO, OrderedDict)))
         @test !any(m -> m.module === Microelectronics, methods(print, (OrderedDict,)))
+        # shown by OrderedCollections, not as a report table (the exact text
+        # depends on the Julia version: OrderedDict or OrderedCollections.OrderedDict)
         d = OrderedDict("a" => 1)
-        @test repr(d) == "OrderedDict(\"a\" => 1)" || repr(d) == "OrderedDict{String, Int64}(\"a\" => 1)"
-        @test startswith(plain(d), "OrderedDict")
+        tbl = sprint(io -> report(io, d))
+        @test occursin("OrderedDict", repr(d)) && repr(d) != tbl
+        @test occursin("OrderedDict", plain(d)) && plain(d) != tbl
         @test string(d) == repr(d)
     end
 

@@ -284,6 +284,19 @@ Inductor(name,nplus,nminus,value) = Component(;name,nodes=string.([nplus,nminus]
 Inductor(;name,nplus,nminus,value) = Inductor(name,nplus,nminus,value)
 Diode(name,nplus,nminus,model) = Component(;name,nodes=string.([nplus,nminus]),model,species="diode",prefix="D")
 Diode(;name,nplus,nminus,model) = Diode(name,nplus,nminus,model)
+"""
+   Subckt(name, nodes, model, parameters=[])
+   Subckt(; name, nodes, model, parameters=[])
+
+An instance (`X...`) of the subcircuit `model`, e.g. one defined with
+[`Subcircuit`](@ref), connected to `nodes` in the order of its terminals.
+`parameters` override the subcircuit's defaults, in any of the forms
+[`parameter_list`](@ref) accepts:
+
+```julia-repl
+julia> Subckt("X1", [1, 2], "divider", (R=2u"kΩ",))
+```
+"""
 Subckt(name,nodes::Vector,model::String,parameters=Vector{Parameter}())=Component(;name,prefix="X",nodes=string.(nodes),model,parameters)
 Subckt(;name,nodes::Vector,model::String,parameters=Vector{Parameter}())=Subckt(name,nodes,model,parameters)
 Instance(args...;kwargs...) = Subckt(args...;kwargs...)
