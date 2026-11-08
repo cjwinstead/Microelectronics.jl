@@ -1,23 +1,214 @@
 module Microelectronics
 
-using LazyModules
 using Reexport
-@reexport using OrderedCollections,LaTeXStrings,Markdown,Unitful,Printf, Plots
+@reexport using OrderedCollections,LaTeXStrings,Markdown,Unitful,Printf,Interpolations,Plots
 
-@lazy import NgHerb = "16d751f2-2168-46b0-9d00-9e1470832ba3"
+import NgHerb
+using NgHerb: @ng_str, @real_str, @imag_str, @magnitude_str, @vec_str
 
 import Base.show
 import Base.print
 import Plots.plot
+import Base.=>
+    
+include("Objects.jl")
+
+function  parallel(args...)
+    uconvert(u"Ω",1.0/sum(1.0./[args...]))
+end
+
+function scale_resistor(r::Quantity)
+    res = uconvert(u"Ω",r)
+    if abs(r) >= 1u"MΩ"
+        return uconvert(u"MΩ",r)
+    elseif abs(r) >= 1u"kΩ"
+        return uconvert(u"kΩ",r)
+    else
+        return r
+    end
+end
+
+
+function scale_Hz(f::Quantity)
+    if abs(f) >= 1u"GHz"
+        return uconvert(u"GHz", f)
+    elseif abs(f) >= 1u"MHz"
+        return uconvert(u"MHz", f)
+    elseif abs(f) >= 1u"kHz"
+        return uconvert(u"kHz", f)
+    elseif abs(f) >= 1u"Hz"
+        return uconvert(u"Hz", f)
+    elseif abs(f) >= 1u"mHz"
+        return uconvert(u"mHz", f)
+    end
+
+    return f
+end
+
+function scale_s(s::Quantity)
+    if abs(s) >= 1u"s"
+        return uconvert(u"s", s)
+    elseif abs(s) >= 1u"ms"
+        return uconvert(u"ms", s)
+    elseif abs(s) >= 1u"μs"
+        return uconvert(u"μs", s)
+    elseif abs(s) >= 1u"ns"
+        return uconvert(u"ns", s)
+    elseif abs(s) >= 1u"ps"
+        return uconvert(u"ps", s)
+    elseif abs(s) >= 1u"fs"
+        return uconvert(u"fs", s)
+    end
+
+    return s
+end
+
+function scale_rad(f::Quantity)
+    if abs(f) >= 1u"Grad/s"
+        return uconvert(u"Grad/s", f)
+    elseif abs(f) >= 1u"Mrad/s"
+        return uconvert(u"Mrad/s", f)
+    elseif abs(f) >= 1u"krad/s"
+        return uconvert(u"krad/s", f)
+    elseif abs(f) >= 1u"rad/s"
+        return uconvert(u"rad/s", f)
+    elseif abs(f) >= 1u"mrad/s"
+        return uconvert(u"mrad/s", f)
+    end
+
+    return f
+end
+
+
+
+function scale_capacitor(c::Quantity)
+    if abs(c) >= 1u"μF"
+        return uconvert(u"μF", c)
+    elseif abs(c) >= 1u"nF"
+        return uconvert(u"nF", c)
+    elseif abs(c) >= 1u"pF"
+        return uconvert(u"pF", c)
+    elseif abs(c) >= 1u"fF"
+        return uconvert(u"fF", c)
+    else
+        return c
+    end
+end
+
+
+function scale_current(i::Quantity)
+    if abs(i) >= 1u"MA"
+        return uconvert(u"MA", i)
+    elseif abs(i) >= 1u"kA"
+        return uconvert(u"kA", i)
+    elseif abs(i) >= 1u"A"
+        return uconvert(u"A", i)
+    elseif abs(i) >= 1u"mA"
+        return uconvert(u"mA", i)
+    elseif abs(i) >= 1u"μA"
+        return uconvert(u"μA", i)
+    elseif abs(i) >= 1u"nA"
+        return uconvert(u"nA", i)
+    elseif abs(i) >= 1u"pA"
+        return uconvert(u"pA", i)
+    elseif abs(i) >= 1u"fA"
+        return uconvert(u"fA", i)
+    else
+        return i
+    end
+end
+
+function scale_voltage(v::Quantity)
+    if abs(v) >= 1u"MV"
+        return uconvert(u"MV", v)
+    elseif abs(v) >= 1u"kV"
+        return uconvert(u"kV", v)
+    elseif abs(v) >= 1u"V"
+        return uconvert(u"V", v)
+    elseif abs(v) >= 1u"mV"
+        return uconvert(u"mV", v)
+    elseif abs(v) >= 1u"μV"
+        return uconvert(u"μV", v)
+    elseif abs(v) >= 1u"nV"
+        return uconvert(u"nV", v)
+    elseif abs(v) >= 1u"pV"
+        return uconvert(u"pV", v)
+    elseif abs(v) >= 1u"fV"
+        return uconvert(u"fV", v)
+    else
+        return v
+    end
+end
+
+
+function scale_transconductance(g::Quantity)
+    if abs(g) >= 1u"A/V"
+        return uconvert(u"A/V", g)
+    elseif abs(g) >= 1u"mA/V"
+        return uconvert(u"mA/V", g)
+    elseif abs(g) >= 1u"μA/V"
+        return uconvert(u"μA/V", g)
+    elseif abs(g) >= 1u"nA/V"
+        return uconvert(u"nA/V", g)
+    end
+    
+    return g
+end
+
+
+function scale_quantity(x::Quantity)
+    if isradps(x)
+        return scale_rad(x)
+    elseif isHz(x)
+        return scale_Hz(x)
+    elseif iss(x)
+        return scale_s(x)
+    elseif isresistor(x)
+        return scale_resistor(x)
+    elseif iscapacitor(x)
+        return scale_capacitor(x)
+    elseif isvoltage(x)
+        return scale_voltage(x)
+    elseif iscurrent(x)
+        return scale_current(x)
+    elseif istransconductance(x)
+        return scale_transconductance(x)
+    end
+    return x
+end
+        
+
+function model_library()
+    joinpath(pkgdir(Microelectronics),"model_library.sp")
+end
+export parallel, scale_radps, scale_quantity, scale_resistor, scale_Hz, scale_capacitor, model_library, scale_s
+
+function be_quiet()
+    NgHerb.be_quiet()
+end
+
+function dumpbuffer()
+    NgHerb.dumpbuffer()
+end
+export be_quiet,dumpbuffer
+
+function (=>)(x::Quantity,s::Unitful.FreeUnits)
+    uconvert(s,x)
+end
+
+function (=>)(x::Number,s::Unitful.FreeUnits)
+    s*x
+end
+
 
 #================= GLOBAL VARIABLES ==================#
 #=
-device_types -- dictionary of SPICE devices
+device_species -- dictionary of SPICE devices
 - key is the SPICE instance prefix
 - value is a Symbol naming the device class
 =#
 
-device_types = Dict{String,String}(
+device_species = Dict{String,String}(
         "V"=>"vsource",
         "I"=>"isource",
         "R"=>"resistor",
@@ -34,7 +225,7 @@ device_types = Dict{String,String}(
         "E"=>"vcvs"
         )
 
-device_prefixes = OrderedDict{String,String}(val=>key for (key,val) in device_types)
+device_prefixes = OrderedDict{String,String}(val=>key for (key,val) in device_species)
 
 #=
 counts -- used for auto-named instances
@@ -100,6 +291,53 @@ function dB20(x)
 end
 export dB20
 
+
+function isradps(x::Quantity)
+    Unitful.dimension(x) == Unitful.dimension(1u"rad/s") && contains(string(x),"rad")
+end
+
+function israd(x::Quantity)
+    Unitful.dimension(x) == Unitful.dimension(1u"rad") && contains(string(x),"rad")
+end
+
+function iss(x::Quantity)
+    Unitful.dimension(x) == Unitful.dimension(1u"s")
+end
+
+function isHz(x::Quantity)
+    Unitful.dimension(x) == Unitful.dimension(1u"Hz") && contains(string(x),"Hz")
+end
+
+function is°(x::Quantity)
+    Unitful.dimension(x) == Unitful.dimension(1u"°") && contains(string(x),"°")
+end
+
+
+function isresistor(x::Quantity)
+    Unitful.dimension(x) == Unitful.dimension(1u"Ω") 
+end
+
+function iscapacitor(x::Quantity)
+    Unitful.dimension(x) == Unitful.dimension(1u"F") 
+end
+
+
+function isvoltage(x::Quantity)
+    Unitful.dimension(x) == Unitful.dimension(1u"V") 
+end
+
+
+function iscurrent(x::Quantity)
+    Unitful.dimension(x) == Unitful.dimension(1u"A") 
+end
+
+
+function istransconductance(x::Quantity)
+    Unitful.dimension(x) == Unitful.dimension(1u"A/V") 
+end
+
+
+
 """
    rad(x::Number)
 
@@ -115,7 +353,7 @@ function rad(x::Quantity)
     if contains(string(x),r".*Hz$")
         return uconvert(u"rad/s",x*2π)
     elseif unit(x) == u"°"
-        return uconvert(u"rad",x*2π)
+        return uconvert(u"rad",x)
     elseif unit(upreferred(x)) == u"s^-1"
         return uconvert(u"rad/s",x)
     elseif unit(upreferred(x)) == 1
@@ -127,7 +365,7 @@ end
 function rad(x::Number)
     x*u"rad"
 end
-export rad
+export rad, israd, isradps, isHz, is°, isvoltage, iscurrent, isresistor, iscapacitor, istransconductance, iss
 
 
 """
@@ -145,7 +383,7 @@ function °(x::Quantity)
     if unit(x) == u"rad*s^-1"
         return uconvert(u"Hz",x/2π)
     elseif unit(x) == u"rad"
-        return uconvert(u"°",x/2π)
+        return uconvert(u"°",x)
     elseif unit(upreferred(x)) == u"s^-1"
         return uconvert(u"Hz",x)
     elseif !(typeof(upreferred(x)) <: Quantity)
@@ -216,15 +454,91 @@ function report(s::String)
 end
 
 
-"""
-   function report(io::IO=stdout,p::OrderedDict)
+"Significant digits shown by report()."
+const REPORT_DIGITS = 4
 
-Print the table `p` in Markdown format on `io`.
+# A number with at most REPORT_DIGITS significant digits: 0.6667, 159.2, 1.5e+07
+report_number(x::Bool) = string(x)
+report_number(x::Real) = @sprintf("%.*g", REPORT_DIGITS, float(x))
+report_number(x::Complex) = report_number(real(x)) * (imag(x) < 0 ? " - " : " + ") *
+                            report_number(abs(imag(x))) * "im"
+
+# Value and unit text for one row of a report() table. Quantities get a
+# readable prefix (4.7 mA); a combination of units with no prefix rule, such
+# as kΩ^-1 μF^-1, is first reduced to SI units (s^-1).
+function report_cell(val)
+    val isa Quantity || return (val isa Number ? report_number(val) : string(val)), ""
+    x = scale_quantity(val)
+    if unit(x) == unit(val) && occursin(r"[ ^]", string(unit(val)))
+        x = scale_quantity(upreferred(val))
+    end
+    return report_number(ustrip(x)), string(unit(x))
+end
+
+
+"""
+   ParameterTable
+
+A table of parameter names and values, as made by [`@table`](@ref). It is an
+ordered dictionary from names (`String`) to values: entries keep the order
+they were given in, and it works like any `AbstractDict`:
+
+```julia-repl
+julia> t = @table R=1u"kΩ" C=1u"μF";
+
+julia> t["R"]
+1 kΩ
+
+julia> t["fc"] = Hz(1/(t["R"]*t["C"]));
+
+julia> collect(keys(t))
+3-element Vector{String}:
+ "R"
+ "C"
+ "fc"
+```
+
+It is displayed, printed and interpolated as a [`report`](@ref) table;
+`repr` gives `ParameterTable("R" => 1 kΩ, ...)`.
+"""
+struct ParameterTable <: AbstractDict{String,Any}
+    dict::OrderedDict{String,Any}
+    ParameterTable(d::OrderedDict{String,Any}) = new(d)
+end
+ParameterTable(ps::Pair...) = ParameterTable(OrderedDict{String,Any}(string(k) => v for (k, v) in ps))
+ParameterTable(d::AbstractDict) = ParameterTable(OrderedDict{String,Any}(string(k) => v for (k, v) in d))
+export ParameterTable
+
+Base.length(t::ParameterTable) = length(t.dict)
+Base.iterate(t::ParameterTable, s...) = iterate(t.dict, s...)
+Base.getindex(t::ParameterTable, k::AbstractString) = t.dict[k]
+Base.get(t::ParameterTable, k, default) = get(t.dict, k, default)
+Base.get(f::Base.Callable, t::ParameterTable, k) = get(f, t.dict, k)
+Base.haskey(t::ParameterTable, k) = haskey(t.dict, k)
+Base.keys(t::ParameterTable) = keys(t.dict)
+Base.values(t::ParameterTable) = values(t.dict)
+Base.setindex!(t::ParameterTable, v, k::AbstractString) = (t.dict[k] = v; t)
+Base.delete!(t::ParameterTable, k) = (delete!(t.dict, k); t)
+Base.empty!(t::ParameterTable) = (empty!(t.dict); t)
+Base.copy(t::ParameterTable) = ParameterTable(copy(t.dict))
+Base.empty(::ParameterTable) = ParameterTable()
+
+# A parameter table is shown and printed as a report table, so that
+# `@table R C` in a notebook, `print(t)` and "$t" all give the table.
+Base.show(io::IO, ::MIME"text/plain", t::ParameterTable) = report(io, t)
+Base.print(io::IO, t::ParameterTable) = report(io, t)
+
+
+"""
+   report(io::IO=stdout, p::AbstractDict)
+   report(p::NamedTuple)
+
+Print the table `p` (e.g. from [`@table`](@ref)) in Markdown format on `io`.
 
 # Examples
 
 ```julia-repl
-julia> report(stdout,OrderedDict("A"=>1u"ms","B"=>1u"V"))
+julia> report(stdout,(A=1u"ms",B=1u"V"))
 | Parameter  |  Value        | Unit        |
 |------------|---------------|-------------|
 |A           |              1|           ms|
@@ -239,114 +553,113 @@ julia> report(@table A=1u"ms" B=1u"V")
 
 ```
 """
-function report(io::IO,p::OrderedDict)
+function report(io::IO,p::AbstractDict)
     print(io,"| Parameter  |  Value        | Unit        |\n")
     print(io,"|------------|---------------|-------------|\n")
     for k in keys(p)
-        val=p[k]
-        if typeof(val)<:Quantity
-            print(io,@sprintf("|%-12s|%15g|%13s|\n",k,ustrip(p[k]),unit(p[k])))
-        else
-            print(io,@sprintf("|%-12s|%15s|%13s|\n",k,p[k]," "))
-        end
+        value, unit_text = report_cell(p[k])
+        print(io,@sprintf("|%-12s|%15s|%13s|\n",k,value,unit_text))
     end
 end
 
-report(p::OrderedDict)=report(stdout,p)
+
+function report(n::NamedTuple)
+    report(ParameterTable(OrderedDict{String,Any}(string(k) => v for (k, v) in pairs(n))))
+end
+
+
+report(p::AbstractDict)=report(stdout,p)
 export report
 
 """
-   Base.show(io::IO,v::Vector{String)}
+   SpiceText
 
-Print `v` as line-by-line text, one line for each element.
-
-# Example
-
-```julia-repl
-julia> v = ["hi","there"]
-hi
-there
-```
-"""
-function Base.show(io::IO,::MIME"text/plain",v::Vector{String})
-    for s in v
-        println(io,s)
-    end
-end
-
-"""
-   Base.show(io::IO,d::OrderedDict}
-
-Print the elements of `d` line-by-line, one line for
-each element.
-
-# Example
+SPICE text, as returned by `build_netlist`, `spice_parameters` and the
+element functions (`resistor`, `vdc`, `mosfet`, ...). It is an
+`AbstractString`, so it works anywhere a string does: compare it, `split`
+or `replace` it, interpolate it, or pass it to `load_netlist`. It differs
+only in how it is displayed, one line per row and without quotes, and so
+does a vector of them:
 
 ```julia-repl
-julia> d=OrderedDict(:a=>"foo",:b=>"bar")
-:a => foo
-:b => bar
-
+julia> build_netlist(; sources=[vdc("V1",1,0,1u"V")], components=[resistor("R1",1,0,1u"kΩ")])
+* circuit
+.include .../model_library.sp
+V1    1     0      DC 1
+R1    1     0     1000
+.end
 ```
+
+`repr` and `string` give ordinary strings.
 """
-function Base.show(io::IO,::MIME"text/plain",d::OrderedDict)
-    report(io,d)
+struct SpiceText <: AbstractString
+    text::String
+    SpiceText(s::AbstractString) = new(String(s))
 end
+export SpiceText
 
-function Base.show(io::IO,s::String)
-    for line in eachsplit(s,"\n")
-        println(io,line)        
+Base.String(t::SpiceText) = t.text
+Base.ncodeunits(t::SpiceText) = ncodeunits(t.text)
+Base.codeunit(t::SpiceText) = codeunit(t.text)
+Base.codeunit(t::SpiceText, i::Integer) = codeunit(t.text, i)
+Base.isvalid(t::SpiceText, i::Integer) = isvalid(t.text, i)
+Base.iterate(t::SpiceText, i::Integer=1) = iterate(t.text, i)
+Base.print(io::IO, t::SpiceText) = print(io, t.text)
+
+# Displayed one line per row, without quotes (show(io, t) still quotes, like any string)
+Base.show(io::IO, ::MIME"text/plain", t::SpiceText) = print(io, chomp(t.text))
+
+# Vectors of SPICE text (e.g. a list of components) display and print one item
+# per line, so "$components" can be interpolated into a netlist.
+function Base.show(io::IO, ::MIME"text/plain", v::AbstractVector{SpiceText})
+    for (i, t) in enumerate(v)
+        print(io, chomp(t.text))
+        i < length(v) && println(io)
+    end
+end
+Base.print(io::IO, v::AbstractVector{SpiceText}) = foreach(t -> println(io, chomp(t.text)), v)
+
+# Write netlist content: text, or (nested) vectors of text, one item per line
+function print_lines(io::IO, x)
+    if x isa AbstractVector
+        foreach(y -> print_lines(io, y), x)
+    else
+        println(io, x)
     end
 end
 
-export show
-
-function Base.print(io::IO,v::Vector{String})
-    for s in v
-        println(io,s)
-    end
-end
 
 
-function Base.print(io::IO,d::OrderedDict)
-    report(io,d)
-end
-
-function Base.print(d::OrderedDict)
-    report(stdout,d)
-end
-
-export print
 
 
 
 
 #=========== SPICE String Conversions ================#
 
-
+#=
 """
-   device_type(d)
+   device_species(d)
 
-Returns a Symbol indicating the device type that corresponds to
+Returns a Symbol indicating the device species that corresponds to
 SPICE prefix `d`. The prefix can be a String, Char, Symbol, or
 other type that can be converted to a single-character String.
 
 # Examples
 ```julia-repl
-julia> device_type("R")
+julia> device_species("R")
 :resistor
 ```
 
 ```julia-repl
-julia> device_type(:C)
+julia> device_species(:C)
 :capacitor
 ```
 """
-function device_type(d)
-    device_types[String(d)]
+function device_species(d)
+    device_species[String(d)]
 end
-export device_type
-
+export device_species
+=#
 
 function device_prefix(d)
     device_prefixes[String(d)]
@@ -423,7 +736,7 @@ Returns a SPICE-formatted string for a Piecewise Linear independent
 source using data provided in `points`. Each element of `points` is
 a Tuple indicating (time,value). The time and value can be Unitful
 Quantities or unitless numbers, in which case they are assumed to be
-(s,V) or (s,A) depending on the source type. Generally speaking, the
+(s,V) or (s,A) depending on the source species. Generally speaking, the
 `points` should be ascending in time. It is not necessary to use the
 same units for each point.
 
@@ -473,7 +786,7 @@ export pulse_string
 """
    next_name(d::String)
 
-Increments the counter for instance of device type `d`, and
+Increments the counter for instance of device species `d`, and
 returns a SPICE device name.
 
 # Examples
@@ -495,7 +808,7 @@ end
 
 
 """
-spice_parameters(p::OrderedDict,[keys...])
+spice_parameters(p::AbstractDict,[keys...])
 
 Return a String of SPICE parameter declarations using entries
 in dictionary `p`. If additional arguments are specified,
@@ -517,16 +830,14 @@ julia> spice_parameters(d,"a")
 
 ```
 """
-function spice_parameters(p::OrderedDict,vars...)
-    ostr = ""
-    for var in vars
-        val = p[var]            
-        ostr *= @sprintf(".param %5s=%s\n",var,qstr(val))
-    end
-    return ostr
+# One `.param` line; used by spice_parameters and by Netlist printing.
+param_line(name,value) = @sprintf(".param %5s=%s",name,qstr(value))
+
+function spice_parameters(p::AbstractDict,vars...)
+    SpiceText(join(param_line(var,p[var])*"\n" for var in vars))
 end
 
-spice_parameters(p::OrderedDict) = spice_parameters(p,Tuple(keys(p))...)
+spice_parameters(p::AbstractDict) = spice_parameters(p,Tuple(keys(p))...)
 export spice_parameters
 
 
@@ -534,12 +845,12 @@ export spice_parameters
 #============= Instantiate Bipole Devices ===============#
 
 """
-   bipole(devtype,nplus,nminus,value)
+   bipole(species,nplus,nminus,value)
 
 Return a String declaring a SPICE instance of a two-terminal bipole
-device of the type specified by `devtype`, connected between nodes
+device of the specified `species`, connected between nodes
 `nplus` and `nminus`, with an automatically assigned device name.
-The device type is usually a Symbol or String equalling one of R, C,
+The `species` is usually a Symbol or String equalling one of R, C,
 L, D, V, or I, but no checking is done. The nodes `nplus` and `nminus`
 are String or Int, and the `value` is a Float, Unitful Quantity, String,
 or model name.
@@ -547,28 +858,28 @@ or model name.
 # Examples
 
 ```julia-repl
-julia> bipole(:d, 2, 1, "1N4004")
+julia> bipole(:d, 2, 1, "D1N4004")
 "D1    2    1   1N4004"
 
 julia> bipole(:C, 2, 3, 1u"nF")
 "C1    2    3   1e-9" 
 ```
 """
-function bipole(devtype,nplus,nminus,value)
-    @sprintf("%-5s %-5s %-5s %s",
-        nextname(uppercase(string(devtype))),nplus,nminus,qstr(value))
+function bipole(species,nplus,nminus,value)
+    SpiceText(@sprintf("%-5s %-5s %-5s %s",
+        nextname(uppercase(string(species))),nplus,nminus,qstr(value)))
 end
 export bipole
 
 
 """
-   bipole(devtype,name,nplus,nminus,value)
+   bipole(species,name,nplus,nminus,value)
 
 Return a String declaring a SPICE instance of a two-terminal bipole
-device of the type specified by `devtype`, connected between nodes
-`nplus` and `nminus`, with the given instance name. The device type
+device of the specified `species`, connected between nodes
+`nplus` and `nminus`, with the given instance name. The `species`
 is usually one of R, C, L, or D, but no checking is done. Usually the
-`devtype` is a String or Symbol, the nodes `nplus` and `nminus` are
+`species` is a String or Symbol, the nodes `nplus` and `nminus` are
 String or Int, and the `value` is a Float, Unitful Quantity, String,
 or model name. If the `name` does not have the expected SPICE prefix,
 it is inserted.
@@ -583,8 +894,8 @@ julia> bipole(:C, 1, 2, 3, 1u"nF")
 "C1    2    3   1e-9" 
 ```
 """
-function bipole(devtype,name,nplus,nminus,value)
-    dt = uppercase(string(devtype))
+function bipole(species,name,nplus,nminus,value)
+    dt = uppercase(string(species))
     nm = string(name)
     
     if uppercase(string(name[1])) == dt
@@ -592,14 +903,14 @@ function bipole(devtype,name,nplus,nminus,value)
     else
         nm = dt*nm
     end
-    @sprintf("%-5s %-5s %-5s %s",
-        nm,nplus,nminus,qstr(value))
+    SpiceText(@sprintf("%-5s %-5s %-5s %s",
+        nm,nplus,nminus,qstr(value)))
 end
 
 
 function subckt_instance(;name,terminals,model)
     if typeof(terminals)==String
-        s = @sprintf("X%-5s %-5s %-5s %-5s %s\n",name,terminals,model)
+        s = @sprintf("X%-5s %s %s\n",name,terminals,model)
     elseif typeof(terminals)<:Union{AbstractArray,Tuple}
         s = @sprintf("X%-5s",name)
         for t in terminals
@@ -607,17 +918,50 @@ function subckt_instance(;name,terminals,model)
         end
         s = @sprintf("%s %s\n",s,model)
     end
-    return s
+    return SpiceText(s)
 end
 export subckt_instance
 
 
+#=
+searchfile(path,key)=filter(x->occursin(key,x),readdir(path))
+    
+function add_model!(models::Vector{String},device::String)
 
+    modelstr   = Regex(device,"i")
+    modelfiles = Vector{String}
+    
+    for pathstr in [ realpath(pwd()),
+                     realpath(pwd()*"/models"),
+                     realpath(dirname(pathof(@__MODULE__))*"../models")
+                     ]
+        push!(modelfiles,searchfile(pathstr,modelstr))
+    end
+
+    push!(models,".include $(modelfiles[1])")    
+end
+
+
+function verify_device_model(models::Union{String,Vector{String}},device::String)
+    rx = Regex(device,"i")
+    if typeof(models) == String
+        mvec = split(models,"\n")
+    else
+        mvec = models
+    end
+    for m in mvec
+        if occursin(basename(m),rx)
+            return true
+        end
+    end
+    return false
+end
+=#
 
 #====== Build and Load Netlists ===========#
 
 """
-   build_netlist(s="";title="circuit",parameters="",models="",sources="",components="")
+   build_netlist(s="";title="circuit",parameters="",models="",includes="",sources="",components="")
 
 Constructs and loads a SPICE netlist with this format:
 
@@ -631,7 +975,10 @@ Constructs and loads a SPICE netlist with this format:
 .end
 ```
 
-The argument `s` can be any SPICE-compatible text. The kwargs
+`globals` names nets shared by the whole circuit, including inside
+subcircuit definitions, e.g. `globals=["vdd"]` writes `.global vdd`.
+
+The positional argument `s` can be any SPICE-compatible text. The kwargs
 can be String or Vector{String} types, usually generated by
 other functions in the Microelectronics package. All args and
 kwargs are optional; if none are given, then an empty netlist
@@ -655,17 +1002,21 @@ R1    1     0     1000
 .end
 ```
 """
-function build_netlist(s="";title="circuit",parameters="",models="",sources="",components="")
+function build_netlist(s="";title="circuit",parameters="",models="",sources="",components="",globals=nothing)
     io = IOBuffer()
     println(io,"* ",title)
-    for x in [parameters,models,sources,components]
-        println(io,x)
+    g = global_line(global_names(globals))
+    isnothing(g) || println(io, g)
+    println(io,".include ",model_library())
+    for x in (parameters,models,sources,components)
+        print_lines(io,x)                   # vectors: one item per line
     end
     println(io,".end")
-    netlist=String(take!(seekstart(io)))
+    netlist=SpiceText(String(take!(seekstart(io))))
     load_netlist(netlist)
     netlist
 end
+
 export build_netlist
 
 
@@ -676,7 +1027,8 @@ export build_netlist
 Calls the NgHerb `load_netlist` function.
 """
 function load_netlist(n::AbstractString)
-    NgHerb.load_netlist(n)
+    register_mosfets(n)                 # see Transistors.jl
+    NgHerb.load_netlist(String(n))      # NgHerb takes a String (n may be SpiceText)
 end
 export load_netlist
 
@@ -722,10 +1074,10 @@ export opamp
 
 
 """
-   independent_source(srctype;args...)
+   independent_source(species;args...)
 
 Instantiate an independent Voltage or Current source.
-`srctype` is "V" or "I".
+`species` is "V" or "I".
 
 # Keyword arguments
 
@@ -735,7 +1087,7 @@ terminals assigned via `nplus` and `nminus`.
 Optionally, a `name` can be given.
 
 Remaining keyword arguments are specific to the desired source
-type.
+species.
 
   - DC source:
     - `dc` specifies the desired voltage or current
@@ -756,7 +1108,7 @@ type.
 
 If no keyword arguments are given, a zero-value source is instantiated.
 """
-function independent_source(srctype;args...)
+function independent_source(species;args...)
 
     io = IOBuffer()
     
@@ -791,9 +1143,9 @@ function independent_source(srctype;args...)
     val = String(take!(seekstart(io)))
     if hasall(args,[:nplus,:nminus])
         if haskey(args,:name)
-            return bipole(srctype,args[:name],args[:nplus],args[:nminus],val)
+            return bipole(species,args[:name],args[:nplus],args[:nminus],val)
         else
-            return bipole(srctype,args[:nplus],args[:nminus],val)
+            return bipole(species,args[:nplus],args[:nminus],val)
         end
     end    
 end
@@ -801,7 +1153,7 @@ export independent_source
 
 
 function dependent_source(s::Symbol;name,nplus,nminus,control,gain=1)
-    dependent_source(Val(s);name,nplus,nminus,control,gain)
+    SpiceText(dependent_source(Val(s);name,nplus,nminus,control,gain))
 end
 
 
@@ -856,16 +1208,16 @@ end
 #======== Aliases for Passive Bipoles =============#
 for c in ("R","L","C","D")
     eval(quote
-            function $(Symbol(device_type(c)))(nplus,nminus,value) 
+            function $(Symbol(device_species[c]))(nplus,nminus,value) 
                 bipole($c,nplus,nminus,value)
             end
-            function $(Symbol(device_type(c)))(name,nplus,nminus,value)
+            function $(Symbol(device_species[c]))(name,nplus,nminus,value)
                 bipole($c,name,nplus,nminus,value)
             end
-            function $(Symbol(device_type(c)))(;name,nplus,nminus,value)
+            function $(Symbol(device_species[c]))(;name,nplus,nminus,value)
                 bipole($c,name,nplus,nminus,value)
             end
-            export $(Symbol(device_type(c)))
+            export $(Symbol(device_species[c]))
         end)
 end
 
@@ -888,9 +1240,12 @@ Analysis   Keyword Argument   Description
            `start`            Initial value
            `stop`             Final value
            `step`             Increment between values
+           `sweep2`           (optional) outer sweep, a tuple
+                              (device, start, stop, step), for a
+                              family of curves
 `:ac`      `start`            Low frequency
            `stop`             High frequency
-           `sweeptype`        :lin, :dec, :oct
+           `mode`             :lin, :dec, :oct
            `steps`            Points per interval
 
 # Examples
@@ -900,21 +1255,50 @@ julia> simulate(:ac; start=10u"kHz",stop=1u"MHz",steps=10)
 ```
 """
 function simulate(s::Symbol;args...)
+    save_mosfet_quantities()            # see Transistors.jl
     simulate(Val(s);args...)
 end
+
+#=
+ngspice converts names in the netlist to lowercase, and its commands only
+recognize the lowercase forms. Names given by the user (nodes, sources,
+swept devices) are therefore lowercased before being sent in a command,
+and matched against result vectors without regard to case.
+=#
+spice_name(x) = lowercase(string(x))
+
+# Name of the latest result set ("op1", "tran2", ...), or nothing if none yet.
+latest_plot() = try NgHerb.curplot() catch; nothing end
+
+"""
+   analysis_kind()
+
+Return the kind of the latest analysis as a Symbol: `:op`, `:dc`, `:ac`,
+`:tran`, `:spec` (after `fft`), or `:none` if nothing has been simulated.
+"""
+function analysis_kind()
+    pl = latest_plot()
+    isnothing(pl) ? :none : Symbol(replace(pl, r"\d+$" => ""))
+end
+export analysis_kind
 
 
 function simulate(::Val{:tran};tstep,tmax)
     transient(;tstep,tmax)
 end
 
-function simulate(::Val{:dc};device,start,stop,step)
-    dc(;device,start,stop,step)
+function simulate(::Val{:dc};device,start,stop,step,sweep2=nothing)
+    dc(;device,start,stop,step,sweep2)
 end
 
-function simulate(::Val{:ac};start,stop,sweeptype=:dec,steps=10)
-    ac(;start,stop,sweeptype,steps)
+function simulate(::Val{:ac};start,stop,mode=:dec,steps=10)
+    ac(;start,stop,mode,steps)
 end
+
+function simulate(::Val{:op})
+    NgHerb.cmd("op")
+end
+
 export simulate
 
 
@@ -925,31 +1309,71 @@ end
 export transient
 
 
-function dc(;device,start,stop,step)
-    s="dc $device $(qstr(start)) $(qstr(stop)) $(qstr(step))"
+"""
+   dc(; device, start, stop, step, sweep2=nothing)
+
+Run a DC sweep of `device` (a voltage or current source, or a resistor).
+With `sweep2 = (device2, start2, stop2, step2)`, the first sweep is repeated
+for each value of `device2`, giving a family of curves.
+"""
+function dc(;device,start,stop,step,sweep2=nothing)
+    s="dc $(spice_name(device)) $(qstr(start)) $(qstr(stop)) $(qstr(step))" * outer_sweep_command(sweep2)
     NgHerb.cmd(s)
 end
 export dc
 
 
 """
-   ac(;start,stop,sweeptype,points)
+   ac(;start,stop,mode,points)
 
 Run an AC simulation with parameters:
 
   * `start` = initial (low) frequency
   * `stop`  = final (high) frequency
-  * `sweeptype` =
+  * `mode` =
     - `lin` for linear
     - `dec` for logarithmic across decades
     - `oct` for logarithmic across octaves
   * `steps` = number of frequency steps per interval
 """
-function ac(;start,stop,sweeptype,steps)
-    s="ac $(string(sweeptype)) $(qstr(steps)) $(qstr(start)) $(qstr(stop)) "
+function ac(;start,stop,mode,steps)
+    s="ac $(string(mode)) $(qstr(steps)) $(qstr(start)) $(qstr(stop)) "
     NgHerb.cmd(s)
 end
 export ac
+
+
+
+function fft(node::String; frequency=1u"kHz", N=20, D=50)
+    T = 1/frequency => u"s"
+    tstep = T/D
+    tmax  = N*T
+    simulate(:tran;tstep,tmax)
+    NgHerb.cmd("linearize")
+    NgHerb.cmd("fft v($node)")
+    f = NgHerb.getrealvec("frequency")
+    phase = NgHerb.getphasevec(node)
+    mag = NgHerb.getmagnitudevec(node)
+    db  = dB20.(mag)
+    return (;fundamental=frequency,f,mag,phase,db)
+end
+export fft
+
+
+
+function distortion(spectrum::NamedTuple)
+    f0 = ustrip(spectrum.fundamental => u"Hz")
+    f = spectrum.f 
+    v = spectrum.mag
+    ϕ = spectrum.phase
+    intrp_v = linear_interpolation(f,v)
+    intrp_ϕ = linear_interpolation(f,ϕ)
+    f_harmonic = f0 .* collect(1:10)
+    harmonics  = [ (intrp_v(fh), intrp_ϕ(fh)) for fh in f_harmonic if fh < maximum(f) ]
+    thd = sqrt(sum(x[1]^2 for x in harmonics[2:end]))/harmonics[1][1]
+    return (; spectrum..., harmonics, thd)
+end
+export distortion
 
 
 """
@@ -958,7 +1382,13 @@ export ac
 Returns the `time` vector from NGSpice.
 """
 function tran_time()
-    NgHerb.getrealvec("time")
+    t=NgHerb.getrealvec("time").*u"s"
+    tmax=maximum(t)
+    for u in (u"s",u"ms",u"μs",u"ns",u"ps")
+        if tmax > 1*u
+            return uconvert.(u,t)
+        end
+    end    
 end
 export tran_time
 
@@ -1004,7 +1434,14 @@ function dc_sweep()
     vecs=NgHerb.listallvecs(pl)
     for v in vecs[pl]
         if occursin("-sweep",v)
-            return NgHerb.getrealvec(v)
+            data = NgHerb.getvec(v)
+            if data[2]=="voltage"
+                return data[3].*1u"V"
+            elseif data[2]=="current"
+                return data[3].*1u"A"
+            else
+                return data[3]
+            end
         end
     end    
 end
@@ -1093,6 +1530,43 @@ end
 export nodes
 
 
+
+"""
+   find_vec(name; node=true, branch=true)
+
+Return the name of the result vector for a node voltage, a source current or
+a MOSFET drain current in the latest analysis. `name` is a node name
+(`"out"`, `2`), a voltage source, whose current is the vector
+`"<name>#branch"`, or a MOSFET, whose drain current is `"@<name>[id]"`.
+Case doesn't matter. With `branch=false` only node voltages are matched;
+with `node=false` only currents. Throws an `ArgumentError` listing the
+available names if there is no match.
+"""
+function find_vec(s; node=true, branch=true)
+    name = spice_name(s)
+    vecs = NgHerb.listcurvecs()
+    candidates = [(node ? [name, "v($name)"] : String[]);
+                  (branch ? ["$name#branch"; something(mosfet_current_vector(name), String[])] : String[])]
+    for candidate in candidates
+        i = findfirst(v -> lowercase(v) == candidate, vecs)
+        isnothing(i) || return vecs[i]
+    end
+    shown = sort(filter(v -> !occursin(r"^(time|frequency)$|-sweep$|^@", lowercase(v)), vecs))
+    append!(shown, collect(keys(LOADED_MOSFETS)))
+    what = node && branch ? "node, source or MOSFET" : node ? "node" : "voltage source or MOSFET"
+    throw(ArgumentError("there is no $what named \"$s\" in the latest analysis " *
+                        "(:$(analysis_kind())). Available: $(join(shown, ", "))"))
+end
+
+find_vecs(args...) = [find_vec(s) for s in args]
+
+"True if `name` is a node voltage in the latest analysis."
+isvoltage(name::AbstractString) = signal_data(find_vec(name))[1] == "voltage"
+
+"True if `name` is a source or MOSFET current in the latest analysis."
+iscurrent(name::AbstractString) = signal_data(find_vec(name))[1] == "current"
+
+
 """
    magnitudes(args...)
 
@@ -1129,8 +1603,13 @@ julia> magnitudes(1,2)
 function magnitudes(args...)
     [ NgHerb.getmagnitudevec(string(i)) for i in args ]
 end
-export magnitudes
 
+
+function magnitudes(v::Vector)
+    [ NgHerb.getmagnitudevec(string(i)) for i in v ]
+end
+export magnitudes
+    
 
 """
    phases(args...)
@@ -1172,6 +1651,29 @@ end
 export phases
 
 
+function simx()
+    pl=NgHerb.curplot()
+    if occursin("tran",pl)
+        return tran_time()
+    elseif occursin("dc",pl)
+        return dc_sweep()
+    elseif occursin("ac",pl)
+        return ac_freq()
+    end
+end
+
+function simxlabel()
+    pl=NgHerb.curplot()
+    if occursin("tran",pl)
+        return "Time [$(unit(tran_time()[1]))]"
+    elseif occursin("dc",pl)
+        return "Sweep [$(unit(dc_sweep()[1]))]"
+    elseif occursin("ac",pl)
+        return "Frequency [Hz]"
+    end
+end
+
+
 """
     plot(v::Vector{Vector};args...)
 
@@ -1205,53 +1707,111 @@ julia> simulate(:ac;start=10u"kHz",stop=10u"MHz",steps=10)
 julia> plot([dB"1",dB"2"];xscale=:log10,labels=["v1" "v2"])
 
 ```
-"""
-function plot(v::Vector{Vector};args...)
-    pl=NgHerb.curplot()
-    if occursin("tran",pl)
-        plot(tran_time(),v;args...)
-    elseif occursin("dc",pl)
-        plot(dc_sweep(),v;args...)
-    elseif occursin("ac",pl)
-        plot(ac_freq(),v;args...)
+        """
+# Labels given by the user (label= or labels=), one per signal, and the
+# remaining plot attributes
+function split_labels(args, n)
+    given = haskey(args, :labels) ? args[:labels] : haskey(args, :label) ? args[:label] : nothing
+    rest = (; (k => v for (k, v) in pairs(args) if k ∉ (:labels, :label))...)
+    labels = isnothing(given) ? nothing :
+             given isa AbstractString ? fill(given, n) : string.(vec(collect(given)))
+    return labels, rest
+end
+
+# Plots can't draw several series whose values carry units, so for plots of
+# several curves the data are plain numbers and the units go in the labels.
+plain(v::AbstractVector{<:Quantity}, u) = ustrip.(u, v)
+plain(v, u) = v
+
+function plot(names::Union{String,Number}...;args...)
+    vecs = find_vecs(names...)              # throws if a name isn't found
+    data = [signal_data(v) for v in vecs]
+    given, rest = split_labels(args, length(vecs))
+    labels = isnothing(given) ? signal_label.(vecs) : given
+    x = plain(simx(), unit(first(simx())))  # the x label carries the unit
+    group(kind) = curve_series(x, [d[2] for d in data if d[1] == kind],
+                               [l for (l, d) in zip(labels, data) if d[1] == kind])
+    vx, vy, vl = group("voltage")
+    ix, iy, il = group("current")
+    if !isempty(vy) && !isempty(iy)
+        p = Plots.plot(vx, vy; labels=permutedims(vl), ylabel="V", xlabel=simxlabel(), rest...)
+        Plots.plot!(twinx(p), ix, iy; labels=permutedims(il), ylabel="A", linestyle=:dash, rest...)
+        return p
+    elseif !isempty(vy)
+        return Plots.plot(vx, vy; labels=permutedims(vl), ylabel="V", xlabel=simxlabel(), rest...)
+    elseif !isempty(iy)
+        return Plots.plot(ix, iy; labels=permutedims(il), ylabel="A", xlabel=simxlabel(), rest...)
+    else
+        throw(ArgumentError("$(join(names, ", ")) are neither node voltages nor currents"))
     end
+end
+
+function plot(v::Vector{Vector};args...)
+    x = simx()
+    length(sweep_curves(length(x))) == 1 &&           # one curve each: plot as given
+        return Plots.plot(x, identity.(v); xlabel=simxlabel(), args...)   # concrete eltype for unit handling
+    given, rest = split_labels(args, length(v))
+    labels = isnothing(given) ? ["y$i" for i in eachindex(v)] : given
+    yu = first(first(v)) isa Quantity ? unit(first(first(v))) : nothing
+    ys = [isnothing(yu) ? y : plain(y, yu) for y in v]
+    xs, ys, ls = curve_series(plain(x, unit(first(x))), ys, labels)
+    ylabel = isnothing(yu) ? "" : "[$yu]"
+    Plots.plot(xs, ys; xlabel=simxlabel(), ylabel, labels=permutedims(ls), rest...)
 end
 export plot
 
 
 """
-   bode(nets...;args...)
+   bode(vectors...;args...)
 
 Create a Bode plot (with magnitude and phase subplots)
-for the indicated nets (i.e. nodes). Additional keyword
-arguments `args` are passed through to `Plots.plot`.
+for the indicated `vectors`. The vectors are a comma-separated
+list of node names (for voltage signals) or source names (for
+current signals). Voltage and current can be mixed on the same
+plot. Magnitude units are dBV and dBA for voltage and current, resp. 
+
+Additional keyword arguments `args` are passed through to `Plots.plot`.
 
 # Examples
 
 ```julia-repl
-julia> v1=vsin("v1",1,0;ac=1,dc=1,frequency=1u"kHz",amplitude=1u"V")
-v1    1     0      DC 1 AC 1 SIN (0,1,1000,0) 
 
-julia> build_netlist(sources=[v1],components=[resistor("R1",1,2,1u"kΩ"),capacitor("C1",2,0,1u"nF")]);
-...
+julia> build_netlist(sources=[vac("V1",1,0)],components=[resistor("R1",1,2,1u"kΩ"),capacitor("C1",2,0,1u"μF")])
+Note: No compatibility mode selected!
+Circuit: * circuit
+* circuit
 
-julia> simulate(:ac;start=10u"kHz",stop=10u"MHz",steps=10)
-...
+V1    1     0      AC 1
+R1    1     2     1000
+C1    2     0     1e-06
+.end
 
-julia> bode(1,2;labels=["v1" "v2"])
+julia> ac(start=10u"Hz",stop=1u"MHz",steps=10,mode=:dec)
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+Using SPARSE 1.3 as Direct Linear Solver
+stderr Note: v1: has no value, DC 0 assumed
+ Reference value :  1.00000e+01
+No. of Data Rows : 51
+
+julia> bode(2,"v1")
 
 ``` 
 """
 function bode(nets...;args...)
+    vecs = find_vecs(nets...)
+    labels=replace.(vecs,r"(.*)#branch"=>s"I(\1)")
+    labels=reshape(labels,(1,length(labels)))
     if occursin("ac",NgHerb.curplot())
-        p=plot(plot(ac_freq(),dB20.(magnitudes(nets...));
+        p=Plots.plot(Plots.plot(ac_freq(),dB20.(magnitudes(vecs));
                     xscale=:log10,
                     ylabel="Magnitude [dB]",
+                    labels,
                     args...),
-               plot(ac_freq(),phases(nets...);
+               Plots.plot(ac_freq(),phases(vecs...);
                     xscale=:log10,
                     ylabel="Phase [°]",
                     xlabel="Frequency [Hz]",
+                    labels,
                     args...);
                layout=(2,1)
              )
@@ -1284,8 +1844,8 @@ function measure(::Val{:Gm};in,out)
     if occursin("tran",NgHerb.curplot())
         NgHerb.cmd("meas tran iopp pp i($out)")
         NgHerb.cmd("meas tran vipp pp v($in)")
-        iopp=NgHerb.getrealvec("iopp")[1]
-        vipp=NgHerb.getrealvec("vipp")[1]
+        iopp=NgHerb.getrealvec("iopp")[1]*u"A"
+        vipp=NgHerb.getrealvec("vipp")[1]*u"V"
         return iopp/vipp        
     end
 end
@@ -1311,6 +1871,17 @@ function measure(::Val{:slew};node)
     end
 end
 
+function measure(::Val{:cutoff};name)
+    if occursin("ac",NgHerb.curplot())
+        vname = find_vec(name)
+        mag = dB20.(magnitudes(vname)[1])
+        cutoff_mag = maximum(mag) - 3.0
+        NgHerb.cmd("meas ac fc when vdb($vname)=$cutoff_mag")
+        return NgHerb.getrealvec("fc")[1]*u"Hz"
+    end
+end
+
+
 export measure
 
 
@@ -1322,10 +1893,12 @@ export measure
 
    @table(p1=val1, p2=val2, ...)  
 
- Define a dictionary (i.e. table) of parameter names and values.
+ Define a table of parameter names and values, a [`ParameterTable`](@ref).
+ Names are taken from variables or from the left of `=`; the table keeps
+ their order and is displayed as a [`report`](@ref) table.
 """
 macro table(vars...)
-    expr = Expr(:call, :OrderedDict)
+    expr = Expr(:call, :ParameterTable)
     for var in vars
         q=eval(:($(QuoteNode(var))))
         t=typeof(q)
@@ -1360,56 +1933,66 @@ end
 
 
 #================ Special Strings =====================#
-# ng"" sends the quoted command to the simulator
-macro ng_str(s)
-    NgHerb.cmd(s)    
+#=
+ng"", real"", imag"", magnitude"" and vec"" come from NgHerb. node"", i"",
+dB"" and phase"" are defined here because they return values with units
+(V, A, dB, °). All of them expand to function calls, so they read the
+latest simulation each time the code runs, also inside loops and functions.
+=#
+
+# Scale a vector of quantities to the first unit in `units` (largest first)
+# that its largest magnitude reaches.
+function scaled(v, units)
+    vmax = isempty(v) ? zero(first(units)) : maximum(abs.(v))
+    for u in units
+        vmax >= 1*u && return uconvert.(u,v)
+    end
+    return v
 end
 
-# real"" retrieves the real-valued part of the indicated vector
-macro real_str(s)
-    NgHerb.getrealvec(s)
-end
+"Voltage at node `name` in the latest simulation, scaled to a readable unit."
+node_voltage(name) = scaled(NgHerb.getrealvec(string(name)) .* u"V",
+                            (u"kV",u"V",u"mV",u"μV",u"nV",u"pV"))
 
-# imag"" retrieves the imaginary-valued part of the indicated vector
-macro imag_str(s)
-    NgHerb.getimaginaryvec(s)
+"Current in voltage source `name` in the latest simulation, scaled to a readable unit."
+source_current(name) = scaled(NgHerb.getrealvec(string(name)*"#branch") .* u"A",
+                              (u"A",u"mA",u"μA",u"nA",u"pA"))
+
+"Magnitude of vector `name` in decibels (20 log10)."
+signal_dB(name) = 20.0 .* log10.(NgHerb.getmagnitudevec(string(name))) .* u"dB"
+
+"Phase of vector `name` in degrees."
+signal_phase(name) = (180/π) .* NgHerb.getphasevec(string(name)) .* u"°"
+
+export node_voltage, source_current, signal_dB, signal_phase
+
+# node"" retrieves the voltage at the indicated node, relative to ground
+macro node_str(s)
+    :(node_voltage($s))
 end
 
 # i"" retrieves the current in the indicated voltage source
 macro i_str(s)
-    NgHerb.getrealvec(s*"#branch")
-end
-
-# magnitude"" retrieves the complex magnitude of the indicated vector
-macro magnitude_str(s)
-    NgHerb.getmagnitudevec(s)
+    :(source_current($s))
 end
 
 # dB"" retrieves a magnitude vector and converts to dB20
 macro dB_str(s)
-    20.0 .* log10.(NgHerb.getmagnitudevec(s))
+    :(signal_dB($s))
 end
 
 # phase"" retrieves a phase vector and converts to degrees
 macro phase_str(s)
-    (180/π).*NgHerb.getphasevec(s)
-end
-
-# vec"" returns a vector, possibly complex 
-macro vec_str(s)
-    NgHerb.getvec(s)
+    :(signal_phase($s))
 end
 
 
-
-
-export @ng_str, @real_str, @imag_str, @i_str, @magnitude_str, @dB_str, @phase_str, @vec_str
+export @ng_str, @real_str, @imag_str, @node_str, @i_str, @magnitude_str, @dB_str, @phase_str, @vec_str
 
 
 export @table
 export @pwl_str
 
-
-
+include("Transistors.jl")
 
 end
