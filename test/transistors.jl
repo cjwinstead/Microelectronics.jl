@@ -41,7 +41,7 @@ without the ng""/node"" string macros (which differ between branches).
         @test flat(mosfet("M1","d","g",0,0)) == "M1 d g 0 0 ald1105n"
         @test flat(mosfet("1","d","g",0,0,"CD4007N")) == "M1 d g 0 0 CD4007N"
         @test flat(mosfet("M1","d","g",0,0,"CD4007N"; W=60e-6, L=10e-6)) == "M1 d g 0 0 CD4007N W=6.0e-5 L=1.0e-5"
-        @test mosfet("M1","d","g",0,0) isa String
+        @test mosfet("M1","d","g",0,0) isa AbstractString
 
         @test NMOS("M1","d","g",0)["gm"] == "@m1[gm]"
         @test Resistor("R1",1,2,1)["i"] == "@r1[i]"

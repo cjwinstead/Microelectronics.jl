@@ -119,7 +119,7 @@ instance parameters are only written when given, so the model's own defaults
 (e.g. W = 30 μm, L = 10 μm for the CD4007N) apply otherwise.
 """
 mosfet(name, drain, gate, source, body, model="ald1105n"; kw...) =
-    string(MOSFET(name, drain, gate, source, body, model; kw...))
+    SpiceText(string(MOSFET(name, drain, gate, source, body, model; kw...)))
 
 export NMOS, PMOS, MOSFET, mosfet
 

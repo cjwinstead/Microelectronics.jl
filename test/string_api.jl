@@ -22,7 +22,7 @@
         @test tstr(diode("D1",2,1,"D1N914")) == "D1 2 1 D1N914"
         @test tstr(bipole(:d,"d1",2,1,"1N4004")) == "d1 2 1 1N4004"
         @test tstr(bipole("R","load",1,2,1u"kΩ")) == "Rload 1 2 1000"
-        @test resistor("R1",1,2,1) isa String
+        @test resistor("R1",1,2,1) isa SpiceText
     end
 
     @testset "Independent sources" begin

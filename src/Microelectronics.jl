@@ -532,23 +532,62 @@ report(p::OrderedDict)=report(stdout,p)
 export report
 
 """
-   Base.show(io::IO,v::Vector{String)}
+   SpiceText
 
-Print `v` as line-by-line text, one line for each element.
-
-# Example
+SPICE text, as returned by `build_netlist`, `spice_parameters` and the
+element functions (`resistor`, `vdc`, `mosfet`, ...). It is an
+`AbstractString`, so it works anywhere a string does: compare it, `split`
+or `replace` it, interpolate it, or pass it to `load_netlist`. It differs
+only in how it is displayed, one line per row and without quotes, and so
+does a vector of them:
 
 ```julia-repl
-julia> v = ["hi","there"]
-hi
-there
+julia> build_netlist(; sources=[vdc("V1",1,0,1u"V")], components=[resistor("R1",1,0,1u"kΩ")])
+* circuit
+.include .../model_library.sp
+V1    1     0      DC 1
+R1    1     0     1000
+.end
 ```
+
+`repr` and `string` give ordinary strings.
 """
-function Base.show(io::IO,::MIME"text/plain",v::Vector{String})
-    for s in v
-        println(io,s)
+struct SpiceText <: AbstractString
+    text::String
+    SpiceText(s::AbstractString) = new(String(s))
+end
+export SpiceText
+
+Base.String(t::SpiceText) = t.text
+Base.ncodeunits(t::SpiceText) = ncodeunits(t.text)
+Base.codeunit(t::SpiceText) = codeunit(t.text)
+Base.codeunit(t::SpiceText, i::Integer) = codeunit(t.text, i)
+Base.isvalid(t::SpiceText, i::Integer) = isvalid(t.text, i)
+Base.iterate(t::SpiceText, i::Integer=1) = iterate(t.text, i)
+Base.print(io::IO, t::SpiceText) = print(io, t.text)
+
+# Displayed one line per row, without quotes (show(io, t) still quotes, like any string)
+Base.show(io::IO, ::MIME"text/plain", t::SpiceText) = print(io, chomp(t.text))
+
+# Vectors of SPICE text (e.g. a list of components) display and print one item
+# per line, so "$components" can be interpolated into a netlist.
+function Base.show(io::IO, ::MIME"text/plain", v::AbstractVector{SpiceText})
+    for (i, t) in enumerate(v)
+        print(io, chomp(t.text))
+        i < length(v) && println(io)
     end
 end
+Base.print(io::IO, v::AbstractVector{SpiceText}) = foreach(t -> println(io, chomp(t.text)), v)
+
+# Write netlist content: text, or (nested) vectors of text, one item per line
+function print_lines(io::IO, x)
+    if x isa AbstractVector
+        foreach(y -> print_lines(io, y), x)
+    else
+        println(io, x)
+    end
+end
+
 
 """
    Base.show(io::IO,d::OrderedDict}
@@ -569,20 +608,6 @@ function Base.show(io::IO,::MIME"text/plain",d::OrderedDict)
     report(io,d)
 end
 
-function Base.show(io::IO,s::String)
-    for line in eachsplit(s,"\n")
-        println(io,line)        
-    end
-end
-
-export show
-
-function Base.print(io::IO,v::Vector{String})
-    for s in v
-        println(io,s)
-    end
-end
-
 
 function Base.print(io::IO,d::OrderedDict)
     report(io,d)
@@ -592,7 +617,6 @@ function Base.print(d::OrderedDict)
     report(stdout,d)
 end
 
-export print
 
 
 
@@ -835,11 +859,11 @@ julia> spice_parameters(d,"a")
 param_line(name,value) = @sprintf(".param %5s=%s",name,qstr(value))
 
 function spice_parameters(p::AbstractDict,vars...)
-    join(param_line(var,p[var])*"\n" for var in vars)
+    SpiceText(join(param_line(var,p[var])*"\n" for var in vars))
 end
 
 spice_parameters(p::AbstractDict) = spice_parameters(p,Tuple(keys(p))...)
-spice_parameters(v::AbstractVector{Parameter}) = join(param_line(x.name,x.value)*"\n" for x in v)
+spice_parameters(v::AbstractVector{Parameter}) = SpiceText(join(param_line(x.name,x.value)*"\n" for x in v))
 export spice_parameters
 
 
@@ -897,14 +921,14 @@ julia> bipole(:C, 1, 2, 3, 1u"nF")
 """
 function bipole(species,name,nplus,nminus,value)
     p = uppercase(string(species))
-    string(Component(;name,prefix=p,species=get(device_species,p,""),
-                     nodes=(nplus,nminus),value))
+    SpiceText(string(Component(;name,prefix=p,species=get(device_species,p,""),
+                     nodes=(nplus,nminus),value)))
 end
 
 
 function subckt_instance(;name,terminals,model)
     nodes = terminals isa AbstractString ? split(terminals) : collect(terminals)
-    string(Subckt(name,nodes,string(model)))
+    SpiceText(string(Subckt(name,nodes,string(model))))
 end
 export subckt_instance
 
@@ -985,7 +1009,7 @@ R2    2     0     1000
 """
 function build_netlist(s=nothing;title=something(s,"circuit"),parameters="",models="",sources="",components="",globals=String[])
     n = Netlist(;title,parameters,models,sources,components,globals)
-    netlist = string(n)
+    netlist = SpiceText(string(n))
     load_netlist(netlist)
     netlist
 end
@@ -1001,7 +1025,7 @@ Calls the NgHerb `load_netlist` function.
 """
 function load_netlist(n::AbstractString)
     register_mosfets(n)                 # see Transistors.jl
-    NgHerb.load_netlist(n)
+    NgHerb.load_netlist(String(n))      # NgHerb takes a String (n may be SpiceText)
 end
 export load_netlist
 
@@ -1038,7 +1062,7 @@ XOA1   0     2     3     my_opamp
 ```
 """
 function opamp(;name,nplus,nminus,out,model="ideal_opamp")
-    string(Opamp(name,nplus,nminus,out,string(model)))
+    SpiceText(string(Opamp(name,nplus,nminus,out,string(model))))
 end
 export opamp
 
@@ -1102,8 +1126,8 @@ function independent_source(species;args...)
     if haskey(args,:value)
         push!(waveforms,Waveform(:raw,args[:value]))
     end
-    string(Source(;species=lowercase(p)*"source",prefix=p,name=get(args,:name,nothing),
-                  nplus=args[:nplus],nminus=args[:nminus],waveforms))
+    SpiceText(string(Source(;species=lowercase(p)*"source",prefix=p,name=get(args,:name,nothing),
+                  nplus=args[:nplus],nminus=args[:nminus],waveforms)))
 end
 export independent_source
 
@@ -1119,8 +1143,8 @@ current is sensed. Equivalent to `string(VCVS(...))` etc.
 function dependent_source(s::Symbol;name,nplus,nminus,control,gain=1)
     T = Dict(:cccs=>CCCS, :ccvs=>CCVS, :vccs=>VCCS, :vcvs=>VCVS)[s]
     ctrl = T <: Union{VCCS,VCVS} ? node_names(control) : node_name(control)
-    string(T(;name=string(name),nplus=node_name(nplus),nminus=node_name(nminus),
-             control=ctrl,gain))
+    SpiceText(string(T(;name=string(name),nplus=node_name(nplus),nminus=node_name(nminus),
+             control=ctrl,gain)))
 end
 export dependent_source
 
