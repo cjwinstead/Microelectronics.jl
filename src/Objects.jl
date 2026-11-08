@@ -14,6 +14,7 @@ struct Point
     time::Number
     value::Number
 end
+Point(t::Tuple) = Point(t[1],t[2])
 
 
 mutable struct Parameter
@@ -168,7 +169,7 @@ the forms [`parameter_list`](@ref) accepts, e.g. `parameters=@table R C` or
 `parameters=(R=1u"kΩ", C=1u"nF")`. `globals` names nets shared by the whole circuit, including
 inside subcircuit definitions, e.g. `globals=["vdd"]` writes `.global vdd`.
 """
-function Netlist(;title="cicuit",models=Vector{Model}(),includes=Vector{Include}([Include(realpath(dirname(pathof(@__MODULE__))*"/../model_library.sp"))]),parameters=Vector{Parameter}(),sources=Vector{Source}(),components=Vector{Component}(),globals=String[])
+function Netlist(;title="circuit",models=Vector{Model}(),includes=Vector{Include}([Include(realpath(dirname(pathof(@__MODULE__))*"/../model_library.sp"))]),parameters=Vector{Parameter}(),sources=Vector{Source}(),components=Vector{Component}(),globals=String[])
     check_instance_parameters(models, components)
     Netlist(title,models,includes,parameter_list(parameters),sources,components,global_names(globals))
 end
@@ -311,11 +312,11 @@ Waveform(::Val{:dc},value) = Waveform(wave=:dc,parameters=OrderedDict{String,Any
 Waveform(::Val{:ac},value=1) = Waveform(wave=:ac,parameters=OrderedDict{String,Any}("value"=>value))
 Waveform(::Val{:sin},offset,amplitude,frequency,phase,args...) = Waveform(wave=:sin,parameters=OrderedDict{String,Any}("offset"=>offset,"amplitude"=>amplitude,"frequency"=>frequency,"phase"=>phase))
 Waveform(::Val{:sin};offset=0u"V",amplitude=5u"mV",frequency=1u"kHz",phase=0u"°",args...)=Waveform(:sin,offset,amplitude,frequency,phase)
-Waveform(::Val{:pwl},points::Vector{Point};args...) = Waveform(wave=:pwl,parameters=points;args...)
-Waveform(::Val{:pulse},low,high,delay,risetime,falltime,width,period,pulses;args...) = Waveform(wave=:pulse,parameters=OrderedDict{String,Any}("high"=>high,"low"=>low,"delay"=>delay,"risetime"=>risetime,"falltime"=>falltime,"width"=>width,"period"=>period,"pulses"=>pulses);args...)
+Waveform(::Val{:pwl},points::AbstractVector;args...) = Waveform(wave=:pwl,parameters=Point[p isa Point ? p : Point(p) for p in points];args...)
+Waveform(::Val{:pulse},low,high,delay,risetime,falltime,width,period,pulses;args...) = Waveform(wave=:pulse,parameters=OrderedDict{String,Any}("low"=>low,"high"=>high,"delay"=>delay,"risetime"=>risetime,"falltime"=>falltime,"width"=>width,"period"=>period,"pulses"=>pulses);args...)
 Waveform(::Val{:pulse};high=5u"V",low=0u"V",risetime=1u"ns",falltime=1u"ns",width=499u"ns",period=1u"ms",delay=0,pulses=0,args...)=Waveform(:pulse,low,high,delay,risetime,falltime,width,period,pulses;args...)
 
-function Source(;species="vsource",prefix="V",name,nplus,nminus,waveforms::Vector{Waveform},args...)
+function Source(;species="vsource",prefix="V",name,nplus,nminus,waveforms::Vector{Waveform}=Waveform[],args...)
     if :ac ∈ keys(args) && args[:ac]≠0
         push!(waveforms,Waveform(:ac,args[:ac]))
     end
@@ -445,6 +446,11 @@ function Base.print(io::IO,v::Vector{Point})
     return nothing
 end
 
+function Base.print(io::IO,m::Model)
+    d = strip(m.definition)
+    print(io, startswith(d,".") ? d : ".model $(m.name) $d")
+end
+
 function Base.print(io::IO,i::Include)
     print.(io,".include ",i.filename)
     return nothing
@@ -462,8 +468,11 @@ function Base.print(io::IO,w::Waveform)
     elseif w.wave == :ac
         print(io, " ac ")
     end
-    for x in w.parameters
-        print(io,qstr(x[2]), " ")
+    values = w.parameters isa AbstractVector ?                 # PWL points
+             Iterators.flatten((p.time, p.value) for p in w.parameters) :
+             (x[2] for x in w.parameters)
+    for v in values
+        print(io,qstr(v), " ")
     end
     if w.wave ∈ [:sin,:pwl,:pulse]
         print(io,")")

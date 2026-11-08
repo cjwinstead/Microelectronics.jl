@@ -12,6 +12,7 @@ include("reports.jl")
 include("spice_text.jl")
 include("parameter_table.jl")
 include("parameter_lists.jl")
+include("objects_main.jl")
 
 rgx=r"\s+"=>" "
 tstr(s) = strip(replace(s,rgx))
