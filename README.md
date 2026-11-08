@@ -5,18 +5,65 @@
 [![Build Status](https://github.com/cjwinstead/Microelectronics.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/cjwinstead/Microelectronics.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/cjwinstead/Microelectronics.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/cjwinstead/Microelectronics.jl)
 
-This package is intended to provide a convenient interface to `ngspice`
-from within JupyterNotebooks, JupyterLab or JupyterHub using Julia
-kernels. Microelectronics.jl relies on the NgHerb.jl package (derived
-from NgSpice.jl), with various additons that support the author's teaching 
-needs. Primary features of Microelectronics.jl include:
+Microelectronics.jl builds circuits in Julia, simulates them with
+[ngspice](https://ngspice.sourceforge.io/) through
+[NgHerb.jl](https://github.com/cjwinstead/NgHerb.jl), and reads, plots and
+tabulates the results. It was written for teaching circuit design in Jupyter
+notebooks: component values carry units (`1u"kΩ"`, `10u"nF"`), and so do the
+results.
 
-* **Netlist creation** -- SPICE elements are instantiated via a variety of Julia functions.
-* **Unitful conversions** -- set component parameters with Unitful, e.g. `1u"nF"` is rendered as `1e-9` in the netlist.
-* **Plots** -- some common plot definitions including transient, dc sweep, and Bode plots.
+## Installation
 
-This module is in an early stage. Dependencies are still being added and removed; for
-example I'm still deciding whether it makes sense to have NgHerb (or NgSpice) as a 
-dependency, as opposed to treating it as a companion module. My bias is to load everything 
-(NgHerb, Plots, etc) so that students don't need to learn too much about Julia packages
-before they can complete assignments.
+Microelectronics is registered in the
+[LEFT registry](https://github.com/cjwinstead/LEFT_registry). In Julia's
+package mode (press `]`):
+
+```
+pkg> registry add https://github.com/cjwinstead/LEFT_registry
+pkg> add Microelectronics
+```
+
+`using Microelectronics` also loads Unitful (for `u"..."` units) and Plots.
+
+## Example
+
+An RC low-pass filter: build it, simulate its frequency response, and find
+the cutoff frequency.
+
+```julia
+using Microelectronics
+
+n = Netlist(title="RC low-pass",
+            sources=[Vac("in", "in", 0)],
+            components=[Resistor("R1", "in", "out", 1u"kΩ"),
+                        Capacitor("C1", "out", 0, 1u"μF")])
+load_netlist(n)
+simulate(:ac; start=10u"Hz", stop=100u"kHz", steps=10)
+
+measure(:cutoff; name="out")      # 159.4 Hz
+bode("out")                       # magnitude and phase plots
+```
+
+## Features
+
+- **Netlists from Julia objects**: resistors, capacitors, inductors, diodes,
+  MOSFETs, op-amps, controlled sources, and DC, AC, sine, pulse and PWL
+  sources, with values in any units. Parameters, subcircuits with default
+  parameters, and global nets.
+- **SPICE text functions** (`resistor`, `vsin`, `build_netlist`, ...) that
+  return netlist lines as text, for writing netlists line by line.
+- **Simulations**: operating point, transient, DC sweeps (including nested
+  sweeps for families of curves) and AC analyses.
+- **Results with units**: `node"out"`, `i"VDD"`, `dB"out"` and `phase"out"`,
+  MOSFET operating points with `device_values`, and measurements such as
+  gain, slew rate and cutoff frequency.
+- **Plots and tables**: `plot("in", "out")`, Bode plots, spectra, and
+  parameter tables with `@table` and `report`.
+- **A model library** with op-amp subcircuits, diodes, BJTs and MOSFETs,
+  included in every netlist.
+
+## Documentation
+
+The [documentation](https://cjwinstead.github.io/Microelectronics.jl/stable/)
+has a guide to building netlists, running simulations and plotting results,
+and a reference for every function.

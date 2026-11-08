@@ -95,7 +95,7 @@ end
 
 
 """
-   Subcircuit(; name, terminals, parameters=[], components)
+    Subcircuit(; name, terminals, parameters=[], components)
 
 A subcircuit definition (`.subckt name terminals ... .ends`), to list among
 a `Netlist`'s `models` and use with [`Subckt`](@ref). `parameters` are
@@ -162,12 +162,37 @@ end
 export Subcircuit,Element,CCCS,VCVS,VCCS,CCVS
 
 """
-   Netlist(; title, models, includes, parameters, sources, components, globals)
+    Netlist(; title, models, includes, parameters, sources, components, globals)
 
-A circuit. `parameters` become `.param` lines and can be given in any of
-the forms [`parameter_list`](@ref) accepts, e.g. `parameters=@table R C` or
-`parameters=(R=1u"kΩ", C=1u"nF")`. `globals` names nets shared by the whole circuit, including
-inside subcircuit definitions, e.g. `globals=["vdd"]` writes `.global vdd`.
+A circuit, written as SPICE text by `print(n)` or `string(n)` and loaded into
+ngspice with [`load_netlist`](@ref). All keywords are optional:
+
+- `title`: the first line of the netlist
+- `models`: [`Model`](@ref)s and [`Subcircuit`](@ref) definitions
+- `includes`: [`Include`](@ref)s; the [`model_library`](@ref) by default
+- `parameters`: `.param` lines, in any form [`parameter_list`](@ref) takes
+  (e.g. `@table R C` or `(R=1u"kΩ", C=1u"nF")`)
+- `sources`: [`Source`](@ref)s, e.g. from [`Vdc`](@ref) or [`Vsin`](@ref)
+- `components`: other elements, e.g. from [`Resistor`](@ref)
+- `globals`: nets shared by the whole circuit, including inside subcircuit
+  definitions, e.g. `globals=["vdd"]` writes `.global vdd`
+
+Subcircuit instances may only set parameters their subcircuit declares. To
+mix in SPICE text, use [`build_netlist`](@ref).
+
+# Example
+
+```jldoctest
+julia> n = Netlist(title="divider", includes=Include[], sources=[Vdc("in","in",0,1u"V")],
+                   components=[Resistor("R1","in","out",1u"kΩ"), Resistor("R2","out",0,1u"kΩ")]);
+
+julia> print(n)
+* divider
+Vin   in 0  dc 1
+R1 in out 1000
+R2 out 0 1000
+.end
+```
 """
 function Netlist(;title="circuit",models=Vector{Model}(),includes=Vector{Include}([Include(realpath(dirname(pathof(@__MODULE__))*"/../model_library.sp"))]),parameters=Vector{Parameter}(),sources=Vector{Source}(),components=Vector{Component}(),globals=String[])
     check_instance_parameters(models, components)
@@ -233,7 +258,7 @@ function unique_parameters(ps::AbstractVector{Parameter})
 end
 
 """
-   parameter_list(x) -> Vector{Parameter}
+    parameter_list(x) -> Vector{Parameter}
 
 The parameters in `x`, which can be a `Parameter`, a `name => value` pair, a
 `(name, value)` tuple, a named tuple `(R=1u"kΩ", C=1u"nF")`, a table from
@@ -286,8 +311,8 @@ Inductor(;name,nplus,nminus,value) = Inductor(name,nplus,nminus,value)
 Diode(name,nplus,nminus,model) = Component(;name,nodes=string.([nplus,nminus]),model,species="diode",prefix="D")
 Diode(;name,nplus,nminus,model) = Diode(name,nplus,nminus,model)
 """
-   Subckt(name, nodes, model, parameters=[])
-   Subckt(; name, nodes, model, parameters=[])
+    Subckt(name, nodes, model, parameters=[])
+    Subckt(; name, nodes, model, parameters=[])
 
 An instance (`X...`) of the subcircuit `model`, e.g. one defined with
 [`Subcircuit`](@ref), connected to `nodes` in the order of its terminals.
@@ -377,7 +402,7 @@ export Spectrum
 
 
 """
-   plot(𝒮::Spectrum; nh=10, kwargs...)
+    plot(𝒮::Spectrum; nh=10, kwargs...)
 
 Plot the magnitude spectrum in dB. By default, the horizontal scale is
 linear. Vertical lines are overlaid to indicate the fundamental and harmonic
