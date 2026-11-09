@@ -29,7 +29,13 @@ makedocs(;
     checkdocs=:exports,     # every exported name needs a docstring in the manual
 )
 
+# The dev branch (the next major version) is published under /next; main's
+# latest commit under /dev, and releases under /stable and /vX.Y. Both
+# branches list all of them so the version menu stays the same whichever
+# branch deployed last.
 deploydocs(;
     repo="github.com/cjwinstead/Microelectronics.jl",
-    devbranch="main",
+    devbranch="dev",
+    devurl="next",
+    versions=["stable" => "v^", "v#.#", "dev" => "dev", "next" => "next"],
 )

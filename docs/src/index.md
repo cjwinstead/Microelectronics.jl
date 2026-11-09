@@ -4,6 +4,11 @@ CurrentModule = Microelectronics
 
 # Microelectronics.jl
 
+!!! note "Next major version"
+    These pages document the `dev` branch, which will become the next major
+    version and differs from the current release in places. For the release
+    used in courses, see the [stable documentation](https://cjwinstead.github.io/Microelectronics.jl/stable/).
+
 Microelectronics.jl builds circuits in Julia, simulates them with
 [ngspice](https://ngspice.sourceforge.io/) (through
 [NgHerb.jl](https://github.com/cjwinstead/NgHerb.jl)), and reads, plots and
