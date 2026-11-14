@@ -1898,7 +1898,7 @@ export measure
 macro table(vars...)
     expr = Expr(:call, :ParameterTable)
     for var in vars
-        q=eval(:($(QuoteNode(var))))
+        q=var #eval(:($(QuoteNode(var))))
         t=typeof(q)
         if t == Symbol
             n=String(q)
