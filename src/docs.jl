@@ -589,8 +589,10 @@ parallel
 
 `x` in the SI prefix that reads best for its magnitude: e.g. `0.0047u"A"`
 becomes 4.7 mA and `1500u"Ω"` becomes 1.5 kΩ. Handles time, frequency (Hz
-and rad/s), resistance, capacitance, voltage, current and transconductance;
-other quantities are returned unchanged. [`report`](@ref) uses it for its
+and rad/s), resistance, capacitance, voltage, current and transconductance.
+A ratio of quantities with the same dimension, such as `2u"kΩ"/1u"Ω"`,
+becomes a plain number (`2000.0`); plain numbers and other quantities are
+returned unchanged. [`report`](@ref) uses it for its
 table.
 
 [`scale_resistor`](@ref), [`scale_capacitor`](@ref), [`scale_Hz`](@ref),

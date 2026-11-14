@@ -156,8 +156,13 @@ function scale_transconductance(g::Quantity)
 end
 
 
+# A plain number has no unit to choose a prefix for
+scale_quantity(x::Number) = x
+
 function scale_quantity(x::Quantity)
-    if isradps(x)
+    if dimension(x) == NoDims && !(israd(x) || is°(x))
+        return uconvert(NoUnits, x)          # a ratio such as kΩ/Ω is a plain number
+    elseif isradps(x)
         return scale_rad(x)
     elseif isHz(x)
         return scale_Hz(x)

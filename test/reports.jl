@@ -47,4 +47,21 @@ Parameter tables from report(). Shared by the main and dev branches.
     @test unit(scale_quantity(-0.0047u"A")) == u"mA"
     @test unit(scale_quantity(-3.3e-3u"V")) == u"mV"
     @test unit(scale_quantity(-2.2e6u"Ω")) == u"MΩ"
+
+    @testset "scale_quantity with plain numbers" begin
+        # plain numbers have no unit and are returned as they are
+        @test scale_quantity(2.5) === 2.5
+        @test scale_quantity(3) === 3
+        @test scale_quantity(3 + 4im) === 3 + 4im
+        @test scale_quantity(0.0) === 0.0
+        # a dimensionless ratio of units becomes a plain number
+        @test scale_quantity(2u"kΩ"/1u"Ω") ≈ 2000
+        @test scale_quantity(2u"kΩ"/1u"Ω") isa Real
+        @test scale_quantity(1u"mV"/1u"V") ≈ 0.001
+        # angles are dimensionless too, but keep their units
+        @test scale_quantity(5u"rad") == 5u"rad"
+        @test scale_quantity(90u"°") == 90u"°"
+        @test unit(scale_quantity(0.0047u"A")) == u"mA"
+        @test table((gain=2u"kΩ"/1u"Ω",)) == table((gain=2000,))
+    end
 end
