@@ -726,11 +726,26 @@ export qstr
     sin_string(offset,amplitude,frequency,phase=0)
 
 Return a SPICE string representing a sinusoidal source. Can be
-appended to voltage or current sources.
+appended to voltage or current sources. `phase` is in degrees when it is a plain number;
+quantities such as `90u"°"` or `π/2*u"rad"` are converted.
 """
 function sin_string(offset,amplitude,frequency,phase=0)
-    return @sprintf(" SIN (%s,%s,%s,%s) ",qstr.((offset,amplitude,frequency,phase))...)
+    return " SIN (" * join(qstr.(sin_values(offset,amplitude,frequency,phase)), ",") * ") "
 end
+
+# The arguments of SPICE's SIN(VO VA FREQ TD THETA PHASE). SPICE takes PHASE in degrees,
+# after the delay TD and damping THETA, so a phase goes sixth with TD = THETA = 0. With
+# no phase the fourth argument, TD, is 0, as before.
+function sin_values(offset,amplitude,frequency,phase)
+    ph = sin_phase(phase)
+    ph isa Number && iszero(ph) && return (offset,amplitude,frequency,0)
+    (offset,amplitude,frequency,0,0,ph)
+end
+function sin_phase(x::Quantity)                    # in degrees, tidied: π/2 rad → 90
+    d = round(Float64(ustrip(u"°",x)); sigdigits=12)
+    isinteger(d) ? Int(d) : d
+end
+sin_phase(x) = x                                    # degrees, or a {parameter}
 export sin_string
 
 

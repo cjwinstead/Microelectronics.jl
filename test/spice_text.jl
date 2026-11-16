@@ -58,4 +58,19 @@ method here broke the precompilation of other packages' extensions.
         q(() -> simulate(:op))
         @test Microelectronics.NgHerb.getrealvec("2")[1] ≈ 0.5
     end
+    @testset "Sine phase" begin
+        # SPICE's SIN(VO VA FREQ TD THETA PHASE): the phase goes sixth, in degrees
+        w(; kw...) = strip(sprint(print, Waveform(:sin; kw...)))
+        @test w() == "sin (0 0.005 1000 0 )"                    # no phase: as before
+        @test w(phase=90u"°") == "sin (0 0.005 1000 0 0 90 )"
+        @test w(phase=π/2*u"rad") == "sin (0 0.005 1000 0 0 90 )"
+        @test w(phase=-45) == "sin (0 0.005 1000 0 0 -45 )"
+        @test sin_string(0, 1, 50, 0) == " SIN (0,1,50,0) "
+        @test sin_string(0, 1, 50, 30u"°") == " SIN (0,1,50,0,0,30) "
+        # alter sets every value it is given, not only the first
+        s = Vsin("V1", 1, 0; amplitude=1u"V", frequency=1u"kHz")
+        alter(s; amplitude=2u"V", phase=45u"°")
+        @test s.waveforms[1].parameters["amplitude"] == 2u"V"
+        @test s.waveforms[1].parameters["phase"] == 45u"°"
+    end
 end

@@ -429,15 +429,10 @@ function alter(s::Source;frequency=nothing,amplitude=nothing,offset=nothing,phas
     if length(i) == 1
         idx = i[1]
         p = s.waveforms[i[1]].parameters 
-        if !isnothing(frequency)
-            p["frequency"] = frequency
-        elseif !isnothing(amplitude)
-            p["amplitude"] = amplitude
-        elseif !isnothing(offset)
-            p["offset"] = offset
-        elseif !isnothing(phase)
-            p["phase"] = phase
-        end
+        isnothing(frequency) || (p["frequency"] = frequency)
+        isnothing(amplitude) || (p["amplitude"] = amplitude)
+        isnothing(offset) || (p["offset"] = offset)
+        isnothing(phase) || (p["phase"] = phase)
     else
         println("warning: source must have exactly one sinusoidal waveform")
     end
@@ -496,6 +491,10 @@ function Base.print(io::IO,w::Waveform)
     values = w.parameters isa AbstractVector ?                 # PWL points
              Iterators.flatten((p.time, p.value) for p in w.parameters) :
              (x[2] for x in w.parameters)
+    if w.wave == :sin                     # SIN(VO VA FREQ TD THETA PHASE)
+        p = w.parameters
+        values = sin_values(p["offset"], p["amplitude"], p["frequency"], p["phase"])
+    end
     for v in values
         print(io,qstr(v), " ")
     end
