@@ -182,4 +182,28 @@ without the ng""/node"" string macros (which differ between branches).
         @test collect(keys(Microelectronics.LOADED_MOSFETS)) == ["m7"]
         @test Microelectronics.LOADED_MOSFETS["m7"] == ("d", "g", "0", "0")
     end
+
+    @testset "AMI 0.6 um models" begin
+        lib = read(model_library(), String)
+        @test occursin(r"\.MODEL ami06N NMOS"i, lib) && occursin(r"\.MODEL ami06P PMOS"i, lib)
+        # a CMOS inverter: rail to rail, switching near mid-supply
+        q(() -> (build_netlist(; sources=[Vdc("VDD", "vdd", 0, 5u"V"), Vdc("VIN", "in", 0, 0u"V")],
+                     components=[NMOS("M1", "out", "in", 0; model="ami06N", W=2u"μm", L=0.6u"μm",
+                                      AD=2e-12, AS=2e-12, PD=6e-6, PS=6e-6),
+                                 PMOS("M2", "out", "in", "vdd"; model="ami06P", W=4u"μm", L=0.6u"μm",
+                                      AD=4e-12, AS=4e-12, PD=8e-6, PS=8e-6)]);
+                 simulate(:dc; device="VIN", start=0, stop=5, step=0.05)))
+        vin = Microelectronics.NgHerb.getrealvec("in")
+        vout = Microelectronics.NgHerb.getrealvec("out")
+        @test vout[1] > 4.99 && vout[end] < 0.01
+        vm = vin[argmin(abs.(vout .- vin))]
+        @test 2.0 < vm < 3.0
+        # no BSIM3 parameter-check log is left in the working directory
+        cd(mktempdir()) do
+            q(() -> (build_netlist(; sources=[Vdc("VD", "d", 0, 2u"V")],
+                                   components=[NMOS("M1", "d", "d", 0; model="ami06N", W=3u"μm", L=0.6u"μm")]);
+                     simulate(:op)))
+            @test isempty(filter(f -> endswith(f, ".log"), readdir()))
+        end
+    end
 end

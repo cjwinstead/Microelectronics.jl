@@ -19,7 +19,14 @@ PMOS("M3", "out", "in", "vdd")                           # ald1105p
 ```
 
 The [`model_library`](@ref) provides `ald1105n`/`ald1105p` (the default
-models) and `CD4007N`/`CD4007P`.
+models), `CD4007N`/`CD4007P`, and `ami06N`/`ami06P`, BSIM3 models of the AMI
+0.6 μm CMOS process for integrated-circuit work (draw them with
+`L=0.6u` and `W` of at least 1.2 μm, and give `AD`, `AS`, `PD` and `PS` for
+realistic junction capacitance):
+
+```julia
+NMOS("M4", "out", "in", 0; model="ami06N", W=2u"μm", L=0.6u"μm")
+```
 
 ## Operating point
 

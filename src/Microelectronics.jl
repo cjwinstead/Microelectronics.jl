@@ -1048,6 +1048,10 @@ Run an analysis on it with [`simulate`](@ref).
 """
 function load_netlist(n::AbstractString)
     register_mosfets(n)                 # see Transistors.jl
+    # BSIM3 models (ami06N/ami06P) would otherwise write a parameter-check log
+    # (b3v33check.log) into the working directory whenever an instance has, say,
+    # no PD/PS given
+    NgHerb.cmd("set ng_nomodcheck")
     NgHerb.load_netlist(String(n))      # NgHerb takes a String (n may be SpiceText)
 end
 export load_netlist
